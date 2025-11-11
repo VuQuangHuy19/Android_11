@@ -1,0 +1,20 @@
+<resources>
+    <!-- Các màu có sẵn -->
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- 👉 Thêm màu gray -->
+    <color name="gray">#757575</color>
+    <color name="red">#E53935</color>
+    <color name="blue">#1E88E5</color>
+    <color name="green">#43A047</color>
+    <color name="orange">#FB8C00</color>
+    <!-- (tuỳ chọn: thêm vài màu hỗ trợ khác) -->
+    <color name="light_gray">#BDBDBD</color>
+    <color name="dark_gray">#424242</color>
+</resources>

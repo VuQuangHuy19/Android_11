@@ -1,0 +1,62 @@
+# ===== Android Studio / Gradle =====
+.gradle/
+build/
+*/build/
+captures/
+outputs/
+local.properties
+.gradle/
+.gradle-cache/
+.cxx/
+
+# ===== IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ===== Generated files =====
+gen/
+out/
+*.apk
+*.ap_
+*.dex
+*.class
+*.log
+
+# ===== Keystore (bảo mật) =====
+*.jks
+*.keystore
+key.properties
+
+# ===== Firebase / Google services =====
+# Nếu có file chứa key nhạy cảm, KHÔNG đẩy public
+google-services.json
+firebase.json
+
+# ===== OS-specific =====
+.DS_Store
+Thumbs.db
+
+# ===== Misc =====
+*.tmp
+*.bak
+*.swp
+*.orig
+
+
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties

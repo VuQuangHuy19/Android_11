@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/nav_transaction"
+        android:icon="@drawable/ic_edit"
+        android:title="Thu/Chi"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/nav_calendar"
+        android:icon="@drawable/ic_calendar"
+        android:title="Lịch"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/nav_report"
+        android:icon="@drawable/ic_chart"
+        android:title="Báo cáo"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/nav_school"
+        android:icon="@drawable/ic_school"
+        android:title="Học phí"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/nav_saving"
+        android:icon="@drawable/ic_saving"
+        android:title="Tiết kiệm"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_setting"
+        android:title="Cài đặt"
+        app:showAsAction="ifRoom" />
+</menu>

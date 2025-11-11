@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="center_vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground">
+
+    <!-- Dấu chấm màu -->
+    <View
+        android:id="@+id/colorDot"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="4dp"
+        android:background="@color/gray"
+        android:layout_gravity="center_vertical"
+        android:backgroundTintMode="src_in"
+        android:backgroundTint="@color/gray" />
+
+    <!-- Tên mục -->
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Ăn uống"
+        android:textColor="@color/black"
+        android:textSize="16sp" />
+
+    <!-- Số tiền -->
+    <TextView
+        android:id="@+id/tvAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2,000,000đ"
+        android:textStyle="bold"
+        android:textColor="@color/gray"
+        android:textSize="15sp" />
+
+</LinearLayout>
