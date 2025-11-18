@@ -164,5 +164,4 @@
             app:tint="@android:color/white"
             app:backgroundTint="@color/teal_700" />
     </FrameLayout>
-
 </LinearLayout>

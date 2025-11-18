@@ -19,7 +19,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.app6hu.Activities.ReportDetail;
 import com.example.app6hu.Adapter.ReportItemAdapter;
 import com.example.app6hu.R;
+import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.ReportItem;
+import com.example.app6hu.model.Transaction;
+import com.example.app6hu.utils.ExpenseForecastUtils;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -33,12 +36,14 @@ import java.util.List;
 public class ReportFragment extends Fragment {
 
     private TextView tvMonthYear, tvIncome, tvExpense, tvBalance, tabExpense, tabIncome;
+    private TextView tvForecastAmount, tvForecastTrend, tvForecastMessage;
     private ImageView btnPrevMonth, btnNextMonth;
     private PieChart pieChart;
     private RecyclerView recyclerReport;
     private boolean showingExpense = true;
     private int currentMonth, currentYear;
     private ReportItemAdapter adapter;
+    private FirebasestoreManager firestoreManager;
 
     public ReportFragment() {
         // Required empty public constructor
@@ -51,10 +56,12 @@ public class ReportFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View v = inflater.inflate(R.layout.fragment_report, container, false);
+        firestoreManager = new FirebasestoreManager();
         initViews(v);
         initTime();
         setupListeners();
         updateUI();
+        loadForecast();
         return v;
     }
 
@@ -69,6 +76,9 @@ public class ReportFragment extends Fragment {
         recyclerReport = v.findViewById(R.id.recyclerDetails);
         tabExpense = v.findViewById(R.id.tabExpense);
         tabIncome = v.findViewById(R.id.tabIncome);
+        tvForecastAmount = v.findViewById(R.id.tvForecastAmount);
+        tvForecastTrend = v.findViewById(R.id.tvForecastTrend);
+        tvForecastMessage = v.findViewById(R.id.tvForecastMessage);
     }
 
     // --- Lấy thời gian hiện tại ---
@@ -201,5 +211,35 @@ public class ReportFragment extends Fragment {
         });
 
         recyclerReport.setAdapter(adapter);
+    }
+
+    // --- Dự báo chi tiêu ---
+    private void loadForecast() {
+        // Lấy dữ liệu giao dịch các tháng trước để dự báo
+        firestoreManager.getAllTransactions(new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
+            @Override
+            public void onSuccess(List<Transaction> transactions) {
+                if (transactions != null && !transactions.isEmpty()) {
+                    ExpenseForecastUtils.ForecastResult forecast = ExpenseForecastUtils.forecastNextMonth(transactions);
+                    String trend = ExpenseForecastUtils.calculateTrend(transactions);
+                    
+                    DecimalFormat df = new DecimalFormat("#,###");
+                    tvForecastAmount.setText("Dự báo: " + df.format(forecast.getForecastAmount()) + "đ");
+                    tvForecastTrend.setText("Xu hướng: " + trend);
+                    tvForecastMessage.setText(forecast.getMessage());
+                } else {
+                    tvForecastAmount.setText("Dự báo: Chưa có dữ liệu");
+                    tvForecastTrend.setText("Xu hướng: Không đủ dữ liệu");
+                    tvForecastMessage.setText("Vui lòng thêm giao dịch để có dự báo chính xác");
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                tvForecastAmount.setText("Dự báo: Lỗi tải dữ liệu");
+                tvForecastTrend.setText("Xu hướng: Không xác định");
+                tvForecastMessage.setText("Không thể tải dữ liệu để dự báo");
+            }
+        });
     }
 }

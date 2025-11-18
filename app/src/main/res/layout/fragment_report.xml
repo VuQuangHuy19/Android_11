@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
-    android:background="@color/white"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="12dp"
+    android:background="@color/white"
+    android:fillViewport="true"
     tools:context=".Fragments.ReportFragment">
+
+<LinearLayout
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp">
 
     <!-- Header -->
     <RelativeLayout
@@ -168,17 +173,83 @@
             android:padding="10dp" />
     </LinearLayout>
 
+    <!-- Dự báo chi tiêu -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardForecast"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="12dp"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📊 Dự báo chi tiêu tháng tới"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvForecastAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dự báo: 8.500.000đ"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/red"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvForecastTrend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Xu hướng: Ổn định"
+                android:textSize="14sp"
+                android:textColor="@color/gray"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvForecastMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dựa trên dữ liệu 3 tháng trước"
+                android:textSize="12sp"
+                android:textColor="@color/dark_gray" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
     <!-- Biểu đồ -->
     <com.github.mikephil.charting.charts.PieChart
         android:id="@+id/pieChart"
         android:layout_width="match_parent"
-        android:layout_height="250dp"
-        android:layout_marginVertical="12dp" />
+        android:layout_height="300dp"
+        android:layout_marginVertical="12dp"
+        android:minHeight="300dp" />
 
     <!-- Danh sách chi tiết -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Chi tiết theo danh mục"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerDetails"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content"
+        android:nestedScrollingEnabled="false" />
 
 </LinearLayout>
+</ScrollView>
