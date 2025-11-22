@@ -31,8 +31,7 @@ key.properties
 
 # ===== Firebase / Google services =====
 # Nếu có file chứa key nhạy cảm, KHÔNG đẩy public
-google-services.json
-firebase.json
+
 
 # ===== OS-specific =====
 .DS_Store
