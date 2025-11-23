@@ -173,6 +173,41 @@
             android:padding="10dp" />
     </LinearLayout>
 
+    <!-- Cảnh báo chi tiêu -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="12dp"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:id="@+id/tvWarningMessage"
+                android:text="⚠️ Chi tiêu vượt quá trung bình"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/red" />
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_warning"
+                app:tint="@color/red" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
     <!-- Dự báo chi tiêu -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardForecast"
@@ -250,6 +285,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:nestedScrollingEnabled="false" />
+
+    <!-- Button test data (tạm thời để test) -->
+    <Button
+        android:id="@+id/btnTestData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:text="🧪 Thêm dữ liệu test"
+        android:textSize="14sp"
+        android:padding="12dp"
+        android:backgroundTint="@color/teal_700" />
 
 </LinearLayout>
 </ScrollView>

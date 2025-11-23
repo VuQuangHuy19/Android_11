@@ -1,6 +1,7 @@
 package com.example.app6hu.Fragments;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -183,49 +184,73 @@ public class GoalsFragment extends Fragment {
         TextInputEditText etDeadline = dialogView.findViewById(R.id.etDeadline);
         TextInputEditText etNote = dialogView.findViewById(R.id.etNote);
 
-        new AlertDialog.Builder(getContext())
+        // Setup DatePicker cho deadline
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        
+        etDeadline.setOnClickListener(v -> {
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                    getContext(),
+                    (view, year, month, dayOfMonth) -> {
+                        calendar.set(year, month, dayOfMonth);
+                        etDeadline.setText(sdf.format(calendar.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis());
+            datePickerDialog.show();
+        });
+
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
                 .setTitle("Thêm mục tiêu tiết kiệm")
                 .setView(dialogView)
-                .setPositiveButton("Thêm", (dialog, which) -> {
-                    String name = etName.getText().toString().trim();
-                    String targetStr = etTarget.getText().toString().trim();
-                    String deadline = etDeadline.getText().toString().trim();
-                    String note = etNote.getText().toString().trim();
+                .setPositiveButton("Thêm", null)
+                .setNegativeButton("Hủy", null)
+                .create();
+
+        dialog.setOnShowListener(dialogInterface -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String name = etName.getText().toString().trim();
+                String targetStr = etTarget.getText().toString().trim();
+                String deadline = etDeadline.getText().toString().trim();
+                String note = etNote.getText().toString().trim();
 
                     if (TextUtils.isEmpty(name)) {
                         Toast.makeText(getContext(), "Vui lòng nhập tên mục tiêu", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    if (TextUtils.isEmpty(targetStr)) {
-                        Toast.makeText(getContext(), "Vui lòng nhập số tiền mục tiêu", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                if (TextUtils.isEmpty(targetStr)) {
+                    Toast.makeText(getContext(), "Vui lòng nhập số tiền mục tiêu", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-                    try {
-                        long target = Long.parseLong(targetStr.replaceAll("[^0-9]", ""));
-                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                        String createdAt = sdf.format(new Date());
+                try {
+                    long target = Long.parseLong(targetStr.replaceAll("[^0-9]", ""));
+                    String createdAt = sdf.format(new Date());
+                    Goal goal = new Goal(name, target, 0, deadline, note, "active", createdAt, "#018786");
+                    firestoreManager.addGoal(goal, new FirebasestoreManager.FirestoreCallback<String>() {
+                        @Override
+                        public void onSuccess(String goalId) {
+                            Toast.makeText(getContext(), "Thêm mục tiêu thành công", Toast.LENGTH_SHORT).show();
+                            loadGoals();
+                            dialog.dismiss();
+                        }
 
-                        Goal goal = new Goal(name, target, 0, deadline, note, "active", createdAt, "#018786");
-                        firestoreManager.addGoal(goal, new FirebasestoreManager.FirestoreCallback<String>() {
-                            @Override
-                            public void onSuccess(String goalId) {
-                                Toast.makeText(getContext(), "Thêm mục tiêu thành công", Toast.LENGTH_SHORT).show();
-                                loadGoals();
-                            }
+                        @Override
+                        public void onFailure(Exception e) {
+                            Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (NumberFormatException e) {
+                    Toast.makeText(getContext(), "Số tiền không hợp lệ", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
 
-                            @Override
-                            public void onFailure(Exception e) {
-                                Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } catch (NumberFormatException e) {
-                        Toast.makeText(getContext(), "Số tiền không hợp lệ", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        dialog.show();
     }
 
     private void showEditGoalDialog(Goal goal) {
@@ -239,63 +264,101 @@ public class GoalsFragment extends Fragment {
         etName.setText(goal.getName());
         etTarget.setText(String.valueOf(goal.getTargetAmount()));
         etSaved.setText(String.valueOf(goal.getSavedAmount()));
-        etDeadline.setText(goal.getDeadline());
+        etDeadline.setText(goal.getDeadline() != null ? goal.getDeadline() : "");
         etNote.setText(goal.getNote());
 
-        new AlertDialog.Builder(getContext())
+        // Setup DatePicker cho deadline
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        
+        // Parse deadline nếu có
+        if (goal.getDeadline() != null && !goal.getDeadline().isEmpty()) {
+            try {
+                Date deadlineDate = sdf.parse(goal.getDeadline());
+                if (deadlineDate != null) {
+                    calendar.setTime(deadlineDate);
+                }
+            } catch (Exception e) {
+                // Ignore parse error
+            }
+        }
+        
+        etDeadline.setOnClickListener(v -> {
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                    getContext(),
+                    (view, year, month, dayOfMonth) -> {
+                        calendar.set(year, month, dayOfMonth);
+                        etDeadline.setText(sdf.format(calendar.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis());
+            datePickerDialog.show();
+        });
+
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
                 .setTitle("Chỉnh sửa mục tiêu")
                 .setView(dialogView)
-                .setPositiveButton("Lưu", (dialog, which) -> {
-                    String name = etName.getText().toString().trim();
-                    String targetStr = etTarget.getText().toString().trim();
-                    String savedStr = etSaved.getText().toString().trim();
-                    String deadline = etDeadline.getText().toString().trim();
-                    String note = etNote.getText().toString().trim();
-
-                    if (TextUtils.isEmpty(name) || TextUtils.isEmpty(targetStr) || TextUtils.isEmpty(savedStr)) {
-                        Toast.makeText(getContext(), "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    try {
-                        long target = Long.parseLong(targetStr.replaceAll("[^0-9]", ""));
-                        long saved = Long.parseLong(savedStr.replaceAll("[^0-9]", ""));
-
-                        goal.setName(name);
-                        goal.setTargetAmount(target);
-                        goal.setSavedAmount(saved);
-                        goal.setDeadline(deadline);
-                        goal.setNote(note);
-
-                        if (saved >= target) {
-                            goal.setStatus("completed");
-                        } else {
-                            goal.setStatus("active");
-                        }
-
-                        // Cập nhật mục tiêu
-                        if (goal.getId() != null && !goal.getId().isEmpty()) {
-                            firestoreManager.updateGoal(goal.getId(), goal, new FirebasestoreManager.FirestoreCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void result) {
-                                    Toast.makeText(getContext(), "Cập nhật mục tiêu thành công", Toast.LENGTH_SHORT).show();
-                                    loadGoals();
-                                }
-
-                                @Override
-                                public void onFailure(Exception e) {
-                                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        } else {
-                            Toast.makeText(getContext(), "Không tìm thấy ID mục tiêu", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (NumberFormatException e) {
-                        Toast.makeText(getContext(), "Số tiền không hợp lệ", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setPositiveButton("Lưu", null)
                 .setNegativeButton("Hủy", null)
-                .show();
+                .create();
+
+        dialog.setOnShowListener(dialogInterface -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String name = etName.getText().toString().trim();
+                String targetStr = etTarget.getText().toString().trim();
+                String savedStr = etSaved.getText().toString().trim();
+                String deadline = etDeadline.getText().toString().trim();
+                String note = etNote.getText().toString().trim();
+
+                if (TextUtils.isEmpty(name) || TextUtils.isEmpty(targetStr) || TextUtils.isEmpty(savedStr)) {
+                    Toast.makeText(getContext(), "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                try {
+                    long target = Long.parseLong(targetStr.replaceAll("[^0-9]", ""));
+                    long saved = Long.parseLong(savedStr.replaceAll("[^0-9]", ""));
+
+                    goal.setName(name);
+                    goal.setTargetAmount(target);
+                    goal.setSavedAmount(saved);
+                    goal.setDeadline(deadline);
+                    goal.setNote(note);
+
+                    if (saved >= target) {
+                        goal.setStatus("completed");
+                    } else {
+                        goal.setStatus("active");
+                    }
+
+                    // Cập nhật mục tiêu
+                    if (goal.getId() != null && !goal.getId().isEmpty()) {
+                        firestoreManager.updateGoal(goal.getId(), goal, new FirebasestoreManager.FirestoreCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                Toast.makeText(getContext(), "Cập nhật mục tiêu thành công", Toast.LENGTH_SHORT).show();
+                                loadGoals();
+                                dialog.dismiss();
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        Toast.makeText(getContext(), "Không tìm thấy ID mục tiêu", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (NumberFormatException e) {
+                    Toast.makeText(getContext(), "Số tiền không hợp lệ", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.show();
     }
 
     private void showDeleteConfirmDialog(Goal goal) {

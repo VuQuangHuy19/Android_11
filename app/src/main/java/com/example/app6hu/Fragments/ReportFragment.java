@@ -6,8 +6,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,15 +33,18 @@ import com.github.mikephil.charting.data.PieEntry;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class ReportFragment extends Fragment {
 
     private TextView tvMonthYear, tvIncome, tvExpense, tvBalance, tabExpense, tabIncome;
-    private TextView tvForecastAmount, tvForecastTrend, tvForecastMessage;
+    private TextView tvForecastAmount, tvForecastTrend, tvForecastMessage, tvWarningMessage;
     private ImageView btnPrevMonth, btnNextMonth;
     private PieChart pieChart;
     private RecyclerView recyclerReport;
+    private View cardWarning;
+    private Button btnTestData;
     private boolean showingExpense = true;
     private int currentMonth, currentYear;
     private ReportItemAdapter adapter;
@@ -79,6 +84,14 @@ public class ReportFragment extends Fragment {
         tvForecastAmount = v.findViewById(R.id.tvForecastAmount);
         tvForecastTrend = v.findViewById(R.id.tvForecastTrend);
         tvForecastMessage = v.findViewById(R.id.tvForecastMessage);
+        cardWarning = v.findViewById(R.id.cardWarning);
+        tvWarningMessage = v.findViewById(R.id.tvWarningMessage);
+        btnTestData = v.findViewById(R.id.btnTestData);
+        
+        // Button test data (tạm thời để test)
+        if (btnTestData != null) {
+            btnTestData.setOnClickListener(v1 -> addTestData());
+        }
     }
 
     // --- Lấy thời gian hiện tại ---
@@ -134,6 +147,7 @@ public class ReportFragment extends Fragment {
         updateTabColors();
         setupPieChart();
         setupRecycler();
+        checkExpenseWarning();
     }
 
     // --- Cập nhật màu tab (dùng ContextCompat.getColor để tránh deprecated) ---
@@ -220,13 +234,27 @@ public class ReportFragment extends Fragment {
             @Override
             public void onSuccess(List<Transaction> transactions) {
                 if (transactions != null && !transactions.isEmpty()) {
-                    ExpenseForecastUtils.ForecastResult forecast = ExpenseForecastUtils.forecastNextMonth(transactions);
-                    String trend = ExpenseForecastUtils.calculateTrend(transactions);
+                    // Lọc chỉ lấy giao dịch có date và type hợp lệ
+                    List<Transaction> validTransactions = new ArrayList<>();
+                    for (Transaction t : transactions) {
+                        if (t != null && t.getDate() != null && t.getType() != null) {
+                            validTransactions.add(t);
+                        }
+                    }
                     
-                    DecimalFormat df = new DecimalFormat("#,###");
-                    tvForecastAmount.setText("Dự báo: " + df.format(forecast.getForecastAmount()) + "đ");
-                    tvForecastTrend.setText("Xu hướng: " + trend);
-                    tvForecastMessage.setText(forecast.getMessage());
+                    if (!validTransactions.isEmpty()) {
+                        ExpenseForecastUtils.ForecastResult forecast = ExpenseForecastUtils.forecastNextMonth(validTransactions);
+                        String trend = ExpenseForecastUtils.calculateTrend(validTransactions);
+                        
+                        DecimalFormat df = new DecimalFormat("#,###");
+                        tvForecastAmount.setText("Dự báo: " + df.format(forecast.getForecastAmount()) + "đ");
+                        tvForecastTrend.setText("Xu hướng: " + trend);
+                        tvForecastMessage.setText(forecast.getMessage());
+                    } else {
+                        tvForecastAmount.setText("Dự báo: Chưa có dữ liệu hợp lệ");
+                        tvForecastTrend.setText("Xu hướng: Không đủ dữ liệu");
+                        tvForecastMessage.setText("Các giao dịch cần có ngày và loại để dự báo");
+                    }
                 } else {
                     tvForecastAmount.setText("Dự báo: Chưa có dữ liệu");
                     tvForecastTrend.setText("Xu hướng: Không đủ dữ liệu");
@@ -238,8 +266,123 @@ public class ReportFragment extends Fragment {
             public void onFailure(Exception e) {
                 tvForecastAmount.setText("Dự báo: Lỗi tải dữ liệu");
                 tvForecastTrend.setText("Xu hướng: Không xác định");
-                tvForecastMessage.setText("Không thể tải dữ liệu để dự báo");
+                tvForecastMessage.setText("Không thể tải dữ liệu để dự báo: " + (e != null ? e.getMessage() : "Unknown error"));
             }
         });
+    }
+
+    // --- Kiểm tra cảnh báo chi tiêu ---
+    private void checkExpenseWarning() {
+        firestoreManager.getAllTransactions(new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
+            @Override
+            public void onSuccess(List<Transaction> transactions) {
+                ExpenseForecastUtils.WarningResult warning = ExpenseForecastUtils.checkExpenseWarning(
+                        transactions, currentMonth, currentYear);
+                
+                if (warning.isOverLimit()) {
+                    cardWarning.setVisibility(View.VISIBLE);
+                    tvWarningMessage.setText(warning.getMessage());
+                } else {
+                    cardWarning.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                cardWarning.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    // --- Thêm dữ liệu test để kiểm tra dự báo và cảnh báo ---
+    private void addTestData() {
+        Calendar cal = Calendar.getInstance();
+        int totalCount = 0;
+
+        // ===== TEST CẢNH BÁO =====
+        // Tạo dữ liệu cho các tháng trước với số tiền THẤP (trung bình ~3-4 triệu/tháng)
+        // Tháng 2 tháng trước
+        cal = Calendar.getInstance();
+        cal.add(Calendar.MONTH, -2);
+        for (int i = 1; i <= 8; i++) {
+            cal.set(Calendar.DAY_OF_MONTH, i * 3);
+            Transaction t = new Transaction();
+            t.setType("EXPENSE");
+            t.setAmount(300000 + i * 50000); // 350k, 400k, 450k, ..., 700k
+            t.setCategory("Ăn uống");
+            t.setDetail("Chi tiêu tháng " + (cal.get(Calendar.MONTH) + 1) + " - " + i);
+            t.setDate(new Date(cal.getTimeInMillis()));
+            t.setIcon("🍔");
+            firestoreManager.addTransaction(t);
+            totalCount++;
+        }
+
+        // Tháng 1 tháng trước
+        cal = Calendar.getInstance();
+        cal.add(Calendar.MONTH, -1);
+        for (int i = 1; i <= 10; i++) {
+            cal.set(Calendar.DAY_OF_MONTH, i * 2);
+            Transaction t = new Transaction();
+            t.setType("EXPENSE");
+            t.setAmount(400000 + i * 40000); // 440k, 480k, 520k, ..., 800k
+            t.setCategory("Đi lại");
+            t.setDetail("Chi tiêu tháng " + (cal.get(Calendar.MONTH) + 1) + " - " + i);
+            t.setDate(new Date(cal.getTimeInMillis()));
+            t.setIcon("🚗");
+            firestoreManager.addTransaction(t);
+            totalCount++;
+        }
+
+        // ===== TẠO DỮ LIỆU THÁNG HIỆN TẠI VỚI SỐ TIỀN CAO (để trigger cảnh báo) =====
+        // Tổng tháng trước: ~3.5-4 triệu
+        // Tạo tháng này với tổng ~6-7 triệu (vượt quá 50-70%)
+        cal = Calendar.getInstance();
+        int daysPassed = cal.get(Calendar.DAY_OF_MONTH);
+        
+        // Tạo nhiều giao dịch để tổng tiền cao hơn trung bình
+        for (int i = 1; i <= Math.min(daysPassed, 10); i++) {
+            cal.set(Calendar.DAY_OF_MONTH, i * 2);
+            Transaction t = new Transaction();
+            t.setType("EXPENSE");
+            t.setAmount(500000 + i * 100000); // 600k, 700k, 800k, ..., 1.5tr
+            t.setCategory("Giải trí");
+            t.setDetail("Chi tiêu tháng này (test cảnh báo) " + i);
+            t.setDate(new Date(cal.getTimeInMillis()));
+            t.setIcon("🎮");
+            firestoreManager.addTransaction(t);
+            totalCount++;
+        }
+
+        // Thêm vài giao dịch lớn nữa để đảm bảo vượt quá
+        cal = Calendar.getInstance();
+        for (int i = 1; i <= 3; i++) {
+            cal.set(Calendar.DAY_OF_MONTH, i * 5);
+            Transaction t = new Transaction();
+            t.setType("EXPENSE");
+            t.setAmount(1500000 + i * 200000); // 1.7tr, 1.9tr, 2.1tr
+            t.setCategory("Mua sắm");
+            t.setDetail("Chi tiêu lớn tháng này " + i);
+            t.setDate(new Date(cal.getTimeInMillis()));
+            t.setIcon("🛍️");
+            firestoreManager.addTransaction(t);
+            totalCount++;
+        }
+
+        Toast.makeText(getContext(), 
+                "✅ Đã thêm " + totalCount + " giao dịch test!\n\n" +
+                "📊 Dữ liệu test:\n" +
+                "• Tháng trước: ~3-4 triệu\n" +
+                "• Tháng này: ~6-7 triệu\n" +
+                "• ⚠️ Cảnh báo sẽ hiển thị!\n\n" +
+                "Vui lòng chờ 3 giây để dữ liệu được lưu...", 
+                Toast.LENGTH_LONG).show();
+
+        // Tự động refresh sau 3 giây (để Firestore kịp lưu)
+        new android.os.Handler().postDelayed(() -> {
+            loadForecast();
+            checkExpenseWarning();
+            Toast.makeText(getContext(), "🔄 Đã refresh dữ liệu! Kiểm tra phần cảnh báo phía trên.", 
+                    Toast.LENGTH_SHORT).show();
+        }, 3000);
     }
 }

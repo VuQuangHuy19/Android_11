@@ -8,6 +8,7 @@ import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.Constants;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -41,6 +42,17 @@ public class FirebasestoreManager {private static final String TAG = "FirestoreM
                         List<Transaction> list = new ArrayList<>();
                         for (QueryDocumentSnapshot doc : task.getResult()) {
                             Transaction t = doc.toObject(Transaction.class);
+                            
+                            // Convert Firestore Timestamp to Date nếu cần
+                            if (t.getDate() == null) {
+                                Object dateObj = doc.get(Constants.FIELD_DATE);
+                                if (dateObj instanceof Timestamp) {
+                                    t.setDate(((Timestamp) dateObj).toDate());
+                                } else if (dateObj instanceof com.google.firebase.Timestamp) {
+                                    t.setDate(((com.google.firebase.Timestamp) dateObj).toDate());
+                                }
+                            }
+                            
                             list.add(t);
                         }
                         callback.onSuccess(list);
@@ -150,6 +162,17 @@ public class FirebasestoreManager {private static final String TAG = "FirestoreM
                         java.util.Calendar cal = java.util.Calendar.getInstance();
                         for (QueryDocumentSnapshot doc : task.getResult()) {
                             Transaction t = doc.toObject(Transaction.class);
+                            
+                            // Convert Firestore Timestamp to Date nếu cần
+                            if (t.getDate() == null) {
+                                Object dateObj = doc.get(Constants.FIELD_DATE);
+                                if (dateObj instanceof Timestamp) {
+                                    t.setDate(((Timestamp) dateObj).toDate());
+                                } else if (dateObj instanceof com.google.firebase.Timestamp) {
+                                    t.setDate(((com.google.firebase.Timestamp) dateObj).toDate());
+                                }
+                            }
+                            
                             if (t.getDate() != null) {
                                 cal.setTime(t.getDate());
                                 int transMonth = cal.get(java.util.Calendar.MONTH) + 1;
