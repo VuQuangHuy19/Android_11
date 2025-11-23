@@ -1,12 +1,16 @@
 package com.example.app6hu.Fragments;
 
+import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.opengl.EGLExt;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,7 +23,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.app6hu.Activities.ReportDetail;
 import com.example.app6hu.Adapter.ReportItemAdapter;
 import com.example.app6hu.R;
+import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.ReportItem;
+import com.example.app6hu.model.Transaction;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -28,7 +34,9 @@ import com.github.mikephil.charting.data.PieEntry;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ReportFragment extends Fragment {
 
@@ -39,6 +47,8 @@ public class ReportFragment extends Fragment {
     private boolean showingExpense = true;
     private int currentMonth, currentYear;
     private ReportItemAdapter adapter;
+    private FirebasestoreManager firestore;
+    private List<Transaction> allTransactions = new ArrayList<>();
 
     public ReportFragment() {
         // Required empty public constructor
@@ -53,8 +63,10 @@ public class ReportFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_report, container, false);
         initViews(v);
         initTime();
+        initRecycler();
+        firestore = new FirebasestoreManager();
         setupListeners();
-        updateUI();
+        loadDataFromFirebase();
         return v;
     }
 
@@ -78,10 +90,23 @@ public class ReportFragment extends Fragment {
         currentYear = c.get(Calendar.YEAR);
     }
 
+    // --- Tối ưu Recycler ---
+    private void initRecycler(){
+        recyclerReport.setLayoutManager(new LinearLayoutManager(getContext()));
+        adapter = new ReportItemAdapter(new ArrayList<>(), showingExpense, getContext(), item -> {
+            Intent intent = new Intent(getContext(), ReportDetail.class);
+            intent.putExtra("categoryName", item.getName());
+            intent.putExtra("isExpense", showingExpense);
+            startActivity(intent);
+        });
+        recyclerReport.setAdapter(adapter);
+    }
+
     // --- Gắn sự kiện ---
     private void setupListeners() {
         btnPrevMonth.setOnClickListener(v -> changeMonth(-1));
         btnNextMonth.setOnClickListener(v -> changeMonth(1));
+        tvMonthYear.setOnClickListener(v -> showMonthYearPicker());
 
         tabExpense.setOnClickListener(v -> {
             showingExpense = true;
@@ -107,23 +132,64 @@ public class ReportFragment extends Fragment {
         updateUI();
     }
 
+    // Lấy dữ liệu từ Firebase
+    private void loadDataFromFirebase(){
+        firestore.getAllTransactions(new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
+            @Override
+            public void onSuccess(List<Transaction> data) {
+                allTransactions.clear();
+                allTransactions.addAll(data);
+                updateUI();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Hien thi loi
+            }
+        });
+    }
     // --- Cập nhật toàn giao diện ---
     private void updateUI() {
+        if (getContext() == null) return;
         tvMonthYear.setText("Tháng " + currentMonth + ", " + currentYear);
+        List<Transaction> monthList = filterByMonth();
+        long totalIncome = 0;
+        long totalExpense = 0;
 
-        // Dữ liệu giả
-        long income = 12000000;
-        long expense = 8000000;
-        long balance = income - expense;
+        for (Transaction t : monthList){
+            if (t.getType().equals("INCOME"))
+                totalIncome += t.getAmount();
+            else
+                totalExpense += t.getAmount();
+        }
+
+        long balance = totalIncome - totalExpense;
         DecimalFormat df = new DecimalFormat("#,###");
 
-        tvIncome.setText("+ " + df.format(income) + "đ");
-        tvExpense.setText("- " + df.format(expense) + "đ");
+        tvIncome.setText("+ " + df.format(totalIncome) + "đ");
+        tvExpense.setText("- " + df.format(totalExpense) + "đ");
         tvBalance.setText((balance >= 0 ? "+" : "-") + df.format(Math.abs(balance)) + "đ");
 
         updateTabColors();
-        setupPieChart();
-        setupRecycler();
+        setupPieChart(monthList);
+        setupRecyclerData(monthList);
+    }
+
+    // Lọc giao dịch theo tháng - năm
+    private List<Transaction> filterByMonth(){
+        List<Transaction> list = new ArrayList<>();
+
+        for (Transaction t : allTransactions){
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(t.getDate());
+
+            int m = cal.get(Calendar.MONTH) + 1;
+            int y = cal.get(Calendar.YEAR);
+
+            if (m == currentMonth && y == currentYear)
+                list.add(t);
+        }
+        return list;
     }
 
     // --- Cập nhật màu tab (dùng ContextCompat.getColor để tránh deprecated) ---
@@ -143,18 +209,21 @@ public class ReportFragment extends Fragment {
     }
 
     // --- Biểu đồ tròn ---
-    private void setupPieChart() {
+    private void setupPieChart(List<Transaction> monthList) {
+        pieChart.clear();
         List<PieEntry> entries = new ArrayList<>();
+        Map<String, Float> map = new HashMap<>();
 
-        if (showingExpense) {
-            entries.add(new PieEntry(3000000, "Ăn uống"));
-            entries.add(new PieEntry(2500000, "Đi lại"));
-            entries.add(new PieEntry(1500000, "Giải trí"));
-            entries.add(new PieEntry(1000000, "Khác"));
-        } else {
-            entries.add(new PieEntry(6000000, "Lương"));
-            entries.add(new PieEntry(3000000, "Thưởng"));
-            entries.add(new PieEntry(3000000, "Khác"));
+        for (Transaction t : monthList){
+            // lấy đúng loại tab đang chọn
+            if (showingExpense && !t.getType().equals("EXPENSE")) continue;
+            if (!showingExpense && !t.getType().equals("INCOME")) continue;
+
+            map.put(t.getCategory(), map.getOrDefault(t.getCategory(), 0f) + (float) t.getAmount());
+        }
+
+        for (String cat: map.keySet()){
+            entries.add(new PieEntry(map.get(cat), cat));
         }
 
         PieDataSet dataSet = new PieDataSet(entries, "");
@@ -162,7 +231,9 @@ public class ReportFragment extends Fragment {
                 Color.parseColor("#FF7043"),
                 Color.parseColor("#29B6F6"),
                 Color.parseColor("#66BB6A"),
-                Color.parseColor("#FFD54F")
+                Color.parseColor("#FFD54F"),
+                Color.parseColor("#AB47BC"),
+                Color.parseColor("#26A69A")
         });
         dataSet.setValueTextSize(12f);
         dataSet.setValueTextColor(Color.WHITE);
@@ -173,33 +244,55 @@ public class ReportFragment extends Fragment {
         pieChart.setCenterText(showingExpense ? "Chi tiêu" : "Thu nhập");
         pieChart.setHoleRadius(45f);
         pieChart.setTransparentCircleRadius(50f);
-        pieChart.animateY(1000);
+        pieChart.animateY(800);
         pieChart.invalidate();
     }
 
     // --- RecyclerView ---
-    private void setupRecycler() {
-        recyclerReport.setLayoutManager(new LinearLayoutManager(getContext()));
-        List<ReportItem> list = new ArrayList<>();
+    private void setupRecyclerData(List<Transaction> list) {
+        Map<String, Long> map = new HashMap<>();
+        List<ReportItem> reportList = new ArrayList<>();
 
-        if (showingExpense) {
-            list.add(new ReportItem("Ăn uống", 3000000, "#FF7043"));
-            list.add(new ReportItem("Đi lại", 2500000, "#29B6F6"));
-            list.add(new ReportItem("Giải trí", 1500000, "#66BB6A"));
-            list.add(new ReportItem("Khác", 1000000, "#FFD54F"));
-        } else {
-            list.add(new ReportItem("Lương", 6000000, "#4CAF50"));
-            list.add(new ReportItem("Thưởng", 3000000, "#2196F3"));
-            list.add(new ReportItem("Khác", 3000000, "#FFC107"));
+        for (Transaction t : list){
+            if (showingExpense && !t.getType().equals("EXPENSE")) continue;
+            if (!showingExpense && !t.getType().equals("INCOME")) continue;
+            map.put(t.getCategory(), map.getOrDefault(t.getCategory(), 0L) + (long) t.getAmount());
         }
+        for (String cat : map.keySet()){
+            reportList.add(new ReportItem(cat, map.get(cat), "#29B6F6"));
+        }
+        adapter.updateData(reportList, showingExpense);
+    }
 
-        adapter = new ReportItemAdapter(list, showingExpense, getContext(), item -> {
-            Intent intent = new Intent(getContext(), ReportDetail.class);
-            intent.putExtra("categoryName", item.getName());
-            intent.putExtra("isExpense", showingExpense);
-            startActivity(intent);
+    // Chọn tháng - năm (DatePicker)
+    private void showMonthYearPicker(){
+        if (getContext() == null) return;
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_month_year_picker, null);
+        NumberPicker npMonth = view.findViewById(R.id.npMonth);
+        NumberPicker npYear = view.findViewById(R.id.npYear);
+        TextView btnOk = view.findViewById(R.id.btnOk);
+        TextView btnCancel = view.findViewById(R.id.btnCancel);
+
+        // setup value
+        npMonth.setMinValue(1);
+        npMonth.setMaxValue(12);
+        npMonth.setValue(currentMonth);
+        npYear.setMinValue(2000);
+        npYear.setMaxValue(2100);
+        npYear.setValue(currentYear);
+
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setView(view)
+                .create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnOk.setOnClickListener(v -> {
+            currentMonth = npMonth.getValue();
+            currentYear = npYear.getValue();
+            updateUI();
+            dialog.dismiss();
         });
 
-        recyclerReport.setAdapter(adapter);
+        dialog.show();
     }
 }
