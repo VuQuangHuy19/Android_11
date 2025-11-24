@@ -20,4 +20,6 @@
     <!-- (tuỳ chọn: thêm vài màu hỗ trợ khác) -->
     <color name="light_gray">#BDBDBD</color>
     <color name="dark_gray">#424242</color>
+
+
 </resources>
