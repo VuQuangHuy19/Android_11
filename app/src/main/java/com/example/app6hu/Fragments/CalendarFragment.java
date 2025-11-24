@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import com.example.app6hu.Adapter.CalendarDayAdapter;
 import com.example.app6hu.R;
+import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.Transaction;
 
 import java.util.ArrayList;
@@ -53,12 +54,18 @@ public class CalendarFragment extends Fragment {
 
     // fake database
     private Map<String, List<Transaction>> transactionMap = new HashMap<>();
+    private Map<String, DaySummary> dailySummary = new HashMap<>();
+
 
     private long lastClickTime = 0;
     private int lastClickPosition = -1;
 
     public CalendarFragment() {
         // Required empty public constructor
+    }
+    public static class DaySummary {
+        public double income = 0;
+        public double expense = 0;
     }
 
     /**
@@ -109,7 +116,7 @@ public class CalendarFragment extends Fragment {
         gridCalendar.setAdapter(adapter);
 
         currentCalendar = Calendar.getInstance();
-        generateFakeData();
+        //generateFakeData();
         updateCalendar();
 
         btnPrevMonth.setOnClickListener(view -> {
@@ -158,34 +165,36 @@ public class CalendarFragment extends Fragment {
     }
 
     private void showTransactionsOfDay(int day) {
-        String key = getDateKey(currentCalendar.get(Calendar.YEAR),
-                currentCalendar.get(Calendar.MONTH),
-                day);
+        int month = currentCalendar.get(Calendar.MONTH) + 1;
+        int year = currentCalendar.get(Calendar.YEAR);
 
-        List<Transaction> list = transactionMap.getOrDefault(key, new ArrayList<>());
-        List<String> displayList = new ArrayList<>();
-        double totalIncome = 0, totalExpense = 0;
+        FirebasestoreManager manager = new FirebasestoreManager();
+        manager.getTransactionsByMonth(month, year, new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
+            @Override
+            public void onSuccess(List<Transaction> list) {
 
-        displayList.add(String.format("Ngày %d/%d/%d - Thu chi tổng", day,
-                currentCalendar.get(Calendar.MONTH)+1,
-                currentCalendar.get(Calendar.YEAR)));
+                List<Transaction> result = new ArrayList<>();
+                Calendar cal = Calendar.getInstance();
 
-        for (Transaction t : list) {
-            String str = String.format("%s - %s - %s - %s", t.icon, t.category, t.detail,
-                    t.type.equals("INCOME") ? "+" + t.amount : "-" + t.amount);
-            displayList.add(str);
-            if (t.type.equals("INCOME")) totalIncome += t.amount;
-            else totalExpense += t.amount;
-        }
+                for (Transaction t : list) {
+                    cal.setTime(t.getDate());
+                    if (cal.get(Calendar.DAY_OF_MONTH) == day) {
+                        result.add(t);
+                    }
+                }
 
-        lvTransactions.setAdapter(new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_list_item_1, displayList));
-        tvTotalIncome.setText(String.format("%.0fđ", totalIncome));
-        tvTotalExpense.setText(String.format("%.0fđ", totalExpense));
-        tvTotalBalance.setText(String.format("%.0fđ", totalIncome - totalExpense));
+                showListViewData(result, day);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+            }
+        });
     }
 
     private void updateCalendar() {
+        loadTransactionsFromFirebase();
+
         // tạo dữ liệu mới cho dayList
         List<Integer> newDays = generateDaysForMonth(currentCalendar);
 
@@ -203,7 +212,7 @@ public class CalendarFragment extends Fragment {
     private String getDateKey(int year, int month, int day) {
         return String.format("%04d-%02d-%02d", year, month, day); }
 
-    private void generateFakeData() {
+    /*private void generateFakeData() {
         // Fake data cố định cho tháng 11/2025
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.YEAR, 2025);
@@ -234,26 +243,82 @@ public class CalendarFragment extends Fragment {
 
             transactionMap.put(getDateKey(2025, Calendar.NOVEMBER, d), list);
         }
-    }
+    }*/
+    private void showListViewData(List<Transaction> list, int day) {
 
-    // Thêm constructor cho Transaction
-    static class Transaction {
-        String type;
-        double amount;
-        String category;
-        String detail;
-        String icon;
+        // Hiển thị giao dịch vào ListView
+        List<String> displayList = new ArrayList<>();
 
-        // Constructor đầy đủ
-        public Transaction(String type, double amount, String category, String detail, String icon) {
-            this.type = type;
-            this.amount = amount;
-            this.category = category;
-            this.detail = detail;
-            this.icon = icon;
+        double income = 0;
+        double expense = 0;
+
+        for (Transaction t : list) {
+            String line = (t.getType().equals("INCOME") ? "[Thu] " : "[Chi] ")
+                    + t.getAmount()
+                    + " - " + t.getCategory()
+                    + " - " + t.getDetail();
+            displayList.add(line);
+
+            if (t.getType().equals("INCOME")) {
+                income += t.getAmount();
+            } else {
+                expense += t.getAmount();
+            }
         }
 
-        public Transaction() {} // default
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<>(requireContext(),
+                        android.R.layout.simple_list_item_1,
+                        displayList);
+
+        lvTransactions.setAdapter(adapter);
+
+        // Cập nhật TextView tổng thu - chi - số dư
+        tvTotalIncome.setText("+" + (int) income);
+        tvTotalExpense.setText("-" + (int) expense);
+        tvTotalBalance.setText(String.valueOf((int) (income - expense)));
+
+        Toast.makeText(requireContext(),
+                "Giao dịch ngày " + day,
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void loadTransactionsFromFirebase() {
+        int month = currentCalendar.get(Calendar.MONTH) + 1;  // 1..12
+        int year = currentCalendar.get(Calendar.YEAR);
+
+        FirebasestoreManager manager = new FirebasestoreManager();
+
+        manager.getTransactionsByMonth(month, year, new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
+            @Override
+            public void onSuccess(List<Transaction> list) {
+
+                dailySummary.clear();
+
+                Calendar cal = Calendar.getInstance();
+
+                for (Transaction t : list) {
+                    cal.setTime(t.getDate());
+                    int day = cal.get(Calendar.DAY_OF_MONTH);
+
+                    String key = String.valueOf(day);
+
+                    if (!dailySummary.containsKey(key))
+                        dailySummary.put(key, new DaySummary());
+
+                    if (t.getType().equals("INCOME"))
+                        dailySummary.get(key).income += t.getAmount();
+                    else
+                        dailySummary.get(key).expense += t.getAmount();
+                }
+
+                adapter.setDailySummary(dailySummary);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onFailure(Exception e) { }
+        });
     }
 
     /**
@@ -264,41 +329,35 @@ public class CalendarFragment extends Fragment {
     private List<Integer> generateDaysForMonth(Calendar cal) {
         List<Integer> days = new ArrayList<>();
 
-        // clone để không mutate cal bên ngoài
         Calendar calendar = (Calendar) cal.clone();
         calendar.set(Calendar.DAY_OF_MONTH, 1);
 
-        // Lấy thứ của ngày 1 (Calendar.SUNDAY=1 ... SATURDAY=7)
         int dow = calendar.get(Calendar.DAY_OF_WEEK); // 1..7
-
-        // Chúng ta muốn Monday = 0 ... Sunday = 6 (cột 0 = Mon)
-        int offset = (dow + 5) % 7; // transform: Sun(1)->6, Mon(2)->0, Tue(3)->1, ...
+        int offset = (dow + 5) % 7; // Monday=0
 
         int daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        // Prev month days: clone và lùi 1 tháng
+        // prev month
         Calendar prev = (Calendar) calendar.clone();
         prev.add(Calendar.MONTH, -1);
         int prevMonthDays = prev.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        // Add trailing days from prev month (as negative numbers, to mark them)
-        for (int i = offset - 1; i >= 0; i--) {
-            int dayFromPrev = prevMonthDays - i;
-            days.add(-dayFromPrev); // negative => month before
+        // ADD BLANK DAYS – FIXED
+        for (int i = 0; i < offset; i++) {
+            days.add(-(prevMonthDays - offset + 1 + i)); // luôn chính xác số ngày
         }
 
-        // Add current month days
+        // current month
         for (int i = 1; i <= daysInMonth; i++) {
             days.add(i);
         }
 
-        // Add leading days for next month until we have 42 cells (6x7)
-        int total = days.size();
-        int need = 42 - total;
-        for (int i = 1; i <= need; i++) {
-            days.add(-i); // negative => month after (use -i)
+        // next month
+        while (days.size() < 42) {
+            days.add(-(days.size() - daysInMonth - offset + 1));
         }
 
         return days;
     }
+
 }
