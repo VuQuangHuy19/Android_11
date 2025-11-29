@@ -1,0 +1,50 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Tên môn -->
+    <TextView
+        android:id="@+id/tvTenHocPhi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tên môn"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#E53935"/>
+
+    <!-- Số tiền -->
+    <TextView
+        android:id="@+id/tvSoTien"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1,500,000 đ"
+        android:textColor="#E53935"
+        android:textSize="15sp"/>
+
+    <!-- HÀNG NGÀY + TRẠNG THÁI -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Ngày đóng -->
+        <TextView
+            android:id="@+id/tvNgayDong"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="29/11/2025"
+            android:textColor="#444"/>
+
+        <!-- Trạng thái bên phải -->
+        <TextView
+            android:id="@+id/tvTrangThai"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DA_DONG"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+</LinearLayout>
