@@ -28,6 +28,7 @@ import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 //import com.github.mikephil.charting.data.BarValue;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 
 import java.util.ArrayList;
@@ -127,10 +128,8 @@ public class ReportDetail extends AppCompatActivity {
     // Vẽ BarChart bằng dữ liệu
     private void showBarChart(HashMap<Integer, Long> map){
         List<BarEntry> entries = new ArrayList<>();
-        List<String> labels = new ArrayList<>();
         for (int i = 1; i <= 12; i++){
             entries.add(new BarEntry(i, map.get(i)));
-            labels.add("T" + i);
         }
 
         BarDataSet dataSet = new BarDataSet(entries, "Theo tháng");
@@ -138,19 +137,36 @@ public class ReportDetail extends AppCompatActivity {
         dataSet.setColor(isExpense ? Color.parseColor("#F44336") : Color.parseColor("#2196F3"));
 
         BarData data = new BarData(dataSet);
-        data.setBarWidth(0.8f);
+        data.setBarWidth(0.6f);
         barChart.setData(data);
+
+        // --- CẤU HÌNH TRỤC X ---
+        XAxis xAxis = barChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setGranularity(1f);
+        xAxis.setLabelCount(12);
+        //Chỉnh khoảng cách để 2 cột ở 2 đầu k bị sát mép
+        xAxis.setAxisMinimum(0.5f);
+        xAxis.setAxisMaximum(12.5f);
+
+        // Format ch T1 - T12 chuẩn xác theo giá trị cột
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                int month = (int) value;
+                if (month >= 1 && month <= 12) {
+                    return "T" + month;
+                }
+                return "";
+            }
+        });
+
         barChart.getLegend().setEnabled(false);
         barChart.getDescription().setEnabled(false);
-
-        XAxis xAxis = barChart.getXAxis();
-        xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setGranularity(1f);
-        xAxis.setDrawGridLines(false);
-
         barChart.getAxisRight().setEnabled(false);
         barChart.getAxisLeft().setTextColor(Color.DKGRAY);
+        barChart.fitScreen();
         barChart.animateY(900);
         barChart.invalidate();
     }

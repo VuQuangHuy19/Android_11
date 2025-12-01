@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "796293450427",
-    "project_id": "app6hu",
-    "storage_bucket": "app6hu.firebasestorage.app"
+    "project_number": "251845984656",
+    "project_id": "app6hu-f3be9",
+    "storage_bucket": "app6hu-f3be9.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:796293450427:android:f5ed7231cf8f7747dfb79e",
+        "mobilesdk_app_id": "1:251845984656:android:38be52520a6def7cccb315",
         "android_client_info": {
           "package_name": "com.example.app6hu"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDk9byKDgfuAdZOQg65_g2a6XYpp5IOgNE"
+          "current_key": "AIzaSyDq9uQ7KosYMX3hzaIXvDMZbdTsmntvNGI"
         }
       ],
       "services": {
