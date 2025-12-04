@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "251845984656",
-    "project_id": "app6hu-f3be9",
-    "storage_bucket": "app6hu-f3be9.firebasestorage.app"
+    "project_number": "758270608106",
+    "project_id": "taichinh-42235",
+    "storage_bucket": "taichinh-42235.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:251845984656:android:38be52520a6def7cccb315",
+        "mobilesdk_app_id": "1:758270608106:android:9c1396731e8a96b48a0d93",
         "android_client_info": {
           "package_name": "com.example.app6hu"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDq9uQ7KosYMX3hzaIXvDMZbdTsmntvNGI"
+          "current_key": "AIzaSyDmLfROXA8J-GkQ57dlSMQ0cKqcDyzmC1Y"
         }
       ],
       "services": {

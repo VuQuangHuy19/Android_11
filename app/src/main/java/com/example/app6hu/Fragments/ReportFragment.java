@@ -26,6 +26,7 @@ import com.example.app6hu.R;
 import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.ReportItem;
 import com.example.app6hu.model.Transaction;
+import com.example.app6hu.utils.ChartUltils;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -227,14 +228,11 @@ public class ReportFragment extends Fragment {
         }
 
         PieDataSet dataSet = new PieDataSet(entries, "");
-        dataSet.setColors(new int[]{
-                Color.parseColor("#FF7043"),
-                Color.parseColor("#29B6F6"),
-                Color.parseColor("#66BB6A"),
-                Color.parseColor("#FFD54F"),
-                Color.parseColor("#AB47BC"),
-                Color.parseColor("#26A69A")
-        });
+        List<Integer> colors = new ArrayList<>();
+        for (PieEntry entry : entries) {
+            colors.add(ChartUltils.getColorByCategory(entry.getLabel()));
+        }
+        dataSet.setColors(colors);
         dataSet.setValueTextSize(12f);
         dataSet.setValueTextColor(Color.WHITE);
 

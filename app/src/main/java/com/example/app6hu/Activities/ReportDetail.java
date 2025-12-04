@@ -134,7 +134,8 @@ public class ReportDetail extends AppCompatActivity {
 
         BarDataSet dataSet = new BarDataSet(entries, "Theo tháng");
         dataSet.setDrawValues(false);
-        dataSet.setColor(isExpense ? Color.parseColor("#F44336") : Color.parseColor("#2196F3"));
+        int color = ChartUltils.getColorByCategory(categoryName);
+        dataSet.setColor(color);
 
         BarData data = new BarData(dataSet);
         data.setBarWidth(0.6f);

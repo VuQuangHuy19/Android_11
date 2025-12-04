@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.app6hu.Activities.ReportDetail;
 import com.example.app6hu.R;
 import com.example.app6hu.model.ReportItem;
+import com.example.app6hu.utils.ChartUltils;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -59,11 +60,8 @@ public class ReportItemAdapter extends RecyclerView.Adapter<ReportItemAdapter.Vi
         holder.tvAmount.setTextColor(isExpense ? Color.RED : Color.parseColor("#2E7D32"));
 
         // Chấm màu bên trái
-        try {
-            holder.colorDot.setBackgroundColor(Color.parseColor(item.getColor()));
-        } catch (Exception e) {
-            holder.colorDot.setBackgroundColor(Color.GRAY);
-        }
+        int color = ChartUltils.getColorByCategory(item.getName());
+        holder.colorDot.setBackgroundColor(color);
 
         // Xử lý click
         holder.itemView.setOnClickListener(v -> {
