@@ -7,14 +7,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+
+import com.example.app6hu.Fragments.CalendarFragment;
 import com.example.app6hu.R;
 import java.util.List;
+import java.util.Map;
 
 public class CalendarDayAdapter extends BaseAdapter {
 
     private final Context context;
     private final List<Integer> days; // 0 => ô trống
     private final LayoutInflater inflater;
+    private Map<String, CalendarFragment.DaySummary> dailySummary;
 
     public CalendarDayAdapter(Context context, List<Integer> days) {
         this.context = context;
@@ -22,6 +26,9 @@ public class CalendarDayAdapter extends BaseAdapter {
         this.inflater = LayoutInflater.from(context);
     }
 
+    public void setDailySummary(Map<String, CalendarFragment.DaySummary> map) {
+        this.dailySummary = map;
+    }
     @Override
     public Object getItem(int position) {
         return days == null ? null : days.get(position);
@@ -51,22 +58,23 @@ public class CalendarDayAdapter extends BaseAdapter {
         }
 
         int day = days.get(position);
-        if (day == 0) {
-            // ô trống
-            holder.tvDayNumber.setText("");
+        int absDay = Math.abs(day);
+        holder.tvDayNumber.setText(String.valueOf(absDay));
+
+        if (day < 0) {
+            holder.tvDayNumber.setTextColor(Color.GRAY);
             holder.tvIncome.setText("");
             holder.tvExpense.setText("");
         } else {
-            int absDay = Math.abs(day);
-            holder.tvDayNumber.setText(String.valueOf(absDay));
+            holder.tvDayNumber.setTextColor(Color.BLACK);
 
+            CalendarFragment.DaySummary sum =
+                    dailySummary != null ? dailySummary.get(String.valueOf(absDay)) : null;
 
-            if (day < 0) {
-                holder.tvDayNumber.setTextColor(Color.parseColor("#AAAAAA"));
-                holder.tvIncome.setText("");
-                holder.tvExpense.setText("");
+            if (sum != null) {
+                holder.tvIncome.setText("+" + (int)sum.income);
+                holder.tvExpense.setText("-" + (int)sum.expense);
             } else {
-                holder.tvDayNumber.setTextColor(Color.parseColor("#000000"));
                 holder.tvIncome.setText("+0");
                 holder.tvExpense.setText("-0");
             }
@@ -74,6 +82,7 @@ public class CalendarDayAdapter extends BaseAdapter {
 
         return convertView;
     }
+
 
     private static class ViewHolder {
         TextView tvDayNumber;

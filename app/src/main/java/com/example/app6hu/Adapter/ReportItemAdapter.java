@@ -35,6 +35,12 @@ public class ReportItemAdapter extends RecyclerView.Adapter<ReportItemAdapter.Vi
         this.listener = listener;
     }
 
+    public void updateData(List<ReportItem> newItems, boolean isExpense){
+        this.items = newItems;
+        this.isExpense = isExpense;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

@@ -17,35 +17,47 @@ import java.util.List;
 public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private final List<DanhMuc> danhMucList;
+    private OnItemClickListener listener;
+    private int selectedPosition = -1; // Vị trí item được chọn
 
-    public DanhMucAdapter(List<DanhMuc> danhMucList) {
-        this.danhMucList = danhMucList;
+    // Listener cho click
+    public interface OnItemClickListener {
+        void onCategoryClick(DanhMuc item);
+        void onAddClick();
     }
 
-    // --- Xác định loại view ---
+    public DanhMucAdapter(List<DanhMuc> danhMucList, OnItemClickListener listener) {
+        this.danhMucList = danhMucList;
+        this.listener = listener;
+    }
+
     @Override
     public int getItemViewType(int position) {
         return danhMucList.get(position).getViewType();
     }
 
-    // --- ViewHolder cho loại danh mục bình thường ---
+    // Holder danh mục
     public static class CategoryViewHolder extends RecyclerView.ViewHolder {
         ImageView itemIcon;
         TextView itemName;
+        ImageView itemCheck;
 
         public CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
             itemIcon = itemView.findViewById(R.id.item_icon);
             itemName = itemView.findViewById(R.id.item_name);
+            itemCheck = itemView.findViewById(R.id.item_check);
         }
 
-        public void bind(DanhMuc item) {
+        public void bind(DanhMuc item, boolean isSelected) {
             itemIcon.setImageResource(item.getResourcesID());
+            if (item.getColor() != 0) itemIcon.setColorFilter(item.getColor());
             itemName.setText(item.getItemName());
+            itemCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
         }
     }
 
-    // --- ViewHolder cho loại "Thêm" ---
+    // Holder nút thêm
     public static class AddViewHolder extends RecyclerView.ViewHolder {
         ImageView itemIcon;
         TextView itemName;
@@ -65,8 +77,10 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         View view;
+
         if (viewType == DanhMuc.TYPE_CATEGORY) {
             view = inflater.inflate(R.layout.item_danh_muc, parent, false);
             return new CategoryViewHolder(view);
@@ -78,17 +92,44 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        DanhMuc hienTai = danhMucList.get(position);
+
+        DanhMuc item = danhMucList.get(position);
+
         if (holder instanceof CategoryViewHolder) {
-            ((CategoryViewHolder) holder).bind(hienTai);
+            CategoryViewHolder vh = (CategoryViewHolder) holder;
+            vh.bind(item, position == selectedPosition);
+
+            vh.itemView.setOnClickListener(v -> {
+                // Cập nhật vị trí được chọn
+                int previousPosition = selectedPosition;
+                selectedPosition = position;
+                
+                // Cập nhật UI
+                if (previousPosition != -1) {
+                    notifyItemChanged(previousPosition);
+                }
+                notifyItemChanged(selectedPosition);
+                
+                if (listener != null) listener.onCategoryClick(item);
+            });
+
         } else if (holder instanceof AddViewHolder) {
-            ((AddViewHolder) holder).bind(hienTai);
+            AddViewHolder vh = (AddViewHolder) holder;
+            vh.bind(item);
+
+            vh.itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onAddClick();
+            });
         }
     }
 
     @Override
     public int getItemCount() {
-        return danhMucList != null ? danhMucList.size() : 0;
+        return danhMucList == null ? 0 : danhMucList.size();
+    }
+
+    public void removeItem(int position) {
+        danhMucList.remove(position);
+        notifyItemRemoved(position);
     }
 }
-

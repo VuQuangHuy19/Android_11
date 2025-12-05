@@ -3,6 +3,7 @@ package com.example.app6hu.model;
 
 
 public class Goal {
+    private String id; // Document ID từ Firestore
     private String name;
     private long targetAmount;
     private long savedAmount;
@@ -28,6 +29,14 @@ public class Goal {
     }
 
     // Getters và Setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getName() {
         return name;
     }

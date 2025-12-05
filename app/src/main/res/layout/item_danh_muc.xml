@@ -8,29 +8,44 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="8dp">
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <ImageView
+                android:id="@+id/item_icon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="Danh mục Icon"
+                android:src="@drawable/ic_logo" />
+
+            <TextView
+                android:id="@+id/item_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="Tên Danh Mục"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <ImageView
-            android:id="@+id/item_icon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:contentDescription="Danh mục Icon"
-            android:src="@drawable/ic_logo" />
-
-        <TextView
-            android:id="@+id/item_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center"
-            android:maxLines="2"
-            android:text="Tên Danh Mục"
-            android:textSize="12sp" />
-    </LinearLayout>
+            android:id="@+id/item_check"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="4dp"
+            android:src="@android:drawable/checkbox_on_background"
+            android:visibility="gone"
+            android:contentDescription="Đã chọn" />
+    </FrameLayout>
 
 </androidx.cardview.widget.CardView>

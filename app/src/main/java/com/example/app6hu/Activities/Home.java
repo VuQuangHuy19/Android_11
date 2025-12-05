@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import com.example.app6hu.Fragments.CalendarFragment;
 import com.example.app6hu.Fragments.ReportFragment;
 import com.example.app6hu.Fragments.GoalsFragment;
+import com.example.app6hu.Fragments.SchoolFragment;
 import com.example.app6hu.Fragments.SettingsFragment;
 import com.example.app6hu.Fragments.TransactionFragment;
 import com.example.app6hu.R;
@@ -52,7 +53,11 @@ public class Home extends AppCompatActivity {
                 selectedFragment = new CalendarFragment();
             } else if (itemId == R.id.nav_report) {
                 selectedFragment = new ReportFragment();
-            } else if (itemId == R.id.nav_saving) {
+            }
+            else if (itemId == R.id.nav_school) {
+                selectedFragment = new SchoolFragment();
+            }
+            else if (itemId == R.id.nav_saving) {
                 selectedFragment = new GoalsFragment();
             } else if (itemId == R.id.nav_settings) {
                 selectedFragment = new SettingsFragment();
