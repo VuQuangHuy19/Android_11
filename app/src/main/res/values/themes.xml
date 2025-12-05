@@ -3,7 +3,12 @@
     <style name="Base.Theme.App6Hu" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">#FFC94D</item>
+        <item name="colorPrimaryVariant">#FFC94D</item>
+        <item name="colorAccent">#FFC94D</item>
+
     </style>
 
     <style name="Theme.App6Hu" parent="Base.Theme.App6Hu" />
+
 </resources>

@@ -1,14 +1,14 @@
 package com.example.app6hu.model;
 
-
-
 public class DanhMuc {
+
     public static final int TYPE_CATEGORY = 0;
     public static final int TYPE_ADD = 1;
 
     private String itemName;
     private int resourcesID;
     private int viewType;
+    private int color = 0; // mặc định không tô màu
 
     public DanhMuc(String itemName, int resourcesID) {
         this.itemName = itemName;
@@ -22,6 +22,13 @@ public class DanhMuc {
         this.viewType = viewType;
     }
 
+    public DanhMuc(String itemName, int resourcesID, int viewType, int color) {
+        this.itemName = itemName;
+        this.resourcesID = resourcesID;
+        this.viewType = viewType;
+        this.color = color;
+    }
+
     public String getItemName() {
         return itemName;
     }
@@ -32,5 +39,9 @@ public class DanhMuc {
 
     public int getViewType() {
         return viewType;
+    }
+
+    public int getColor() {
+        return color;
     }
 }
