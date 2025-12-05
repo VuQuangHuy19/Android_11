@@ -19,6 +19,7 @@
         import com.example.app6hu.firebase.FirebasestoreManager;
         import com.example.app6hu.model.DanhMuc;
         import com.google.firebase.FirebaseApp;
+        import com.google.firebase.firestore.DocumentSnapshot;
         import com.google.firebase.firestore.FirebaseFirestore;
 
         import java.util.List;
@@ -40,6 +41,7 @@
                     v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
                     return insets;
                 });
+                testFirestoreData();
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
                 db.collection("DanhMuc").get()
                         .addOnCompleteListener(task -> {
@@ -64,7 +66,52 @@
                     checkFirebaseConnection();
                 }, 1000);
             }
+            private void testFirestoreData() {
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+                Log.d("DEBUG", "=== KIỂM TRA FIRESTORE ===");
+
+                // Test 1: Kiểm tra collection DanhMuc
+                db.collection("DanhMuc")
+                        .get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                Log.d("DEBUG", "✅ Collection DanhMuc tồn tại");
+                                Log.d("DEBUG", "Số lượng documents: " + task.getResult().size());
+
+                                for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                                    Log.d("DEBUG", "Document ID: " + doc.getId());
+                                    Log.d("DEBUG", "Data: " + doc.getData());
+
+                                    // Kiểm tra từng field cụ thể
+                                    Log.d("DEBUG", "  itemName: " + doc.getString("itemName"));
+                                    Log.d("DEBUG", "  type: " + doc.getString("type"));
+                                    Log.d("DEBUG", "  icon: " + doc.getString("icon"));
+                                    Log.d("DEBUG", "  resourcesID: " + doc.get("resourcesID"));
+                                }
+                            } else {
+                                Log.e("DEBUG", "❌ Lỗi truy cập DanhMuc: " + task.getException());
+                            }
+                        });
+
+                // Test 2: Kiểm tra với filter type = "expense"
+                db.collection("DanhMuc")
+                        .whereEqualTo("type", "expense")
+                        .get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                Log.d("DEBUG", "✅ Query type='expense' thành công");
+                                Log.d("DEBUG", "Số documents type='expense': " + task.getResult().size());
+
+                                if (task.getResult().isEmpty()) {
+                                    Log.w("DEBUG", "⚠️ KHÔNG có documents nào với type='expense'");
+                                    Log.w("DEBUG", "⚠️ Kiểm tra lại giá trị field 'type' trong Firestore");
+                                }
+                            } else {
+                                Log.e("DEBUG", "❌ Lỗi query type='expense': " + task.getException());
+                            }
+                        });
+            }
             private void checkFirebaseConnection() {
                 manager.checkFirestoreConnection(new FirebasestoreManager.FirestoreCallback<Boolean>() {
                     @Override

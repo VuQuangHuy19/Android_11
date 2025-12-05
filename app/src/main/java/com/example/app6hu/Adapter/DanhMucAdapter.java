@@ -115,9 +115,12 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        Log.d("DanhMucAdapter", "onBindViewHolder position: " + position);
         DanhMuc item = danhMucList.get(position);
+        Log.d("DanhMucAdapter", "Item: " + item.getItemName() + ", Type: " + item.getViewType());
 
         if (holder instanceof CategoryViewHolder) {
+            Log.d("DanhMucAdapter", "Binding CategoryViewHolder");
             CategoryViewHolder vh = (CategoryViewHolder) holder;
             boolean isSelected = (selectedPosition == position);
             vh.bind(context, item, isSelected);
@@ -137,6 +140,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
         } else if (holder instanceof AddViewHolder) {
+            Log.d("DanhMucAdapter", "Binding AddViewHolder");
             AddViewHolder vh = (AddViewHolder) holder;
             vh.bind();
 

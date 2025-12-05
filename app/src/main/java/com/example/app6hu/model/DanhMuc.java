@@ -22,7 +22,9 @@ public class DanhMuc {
     public DanhMuc(String itemName, int resourcesID, int viewType) {
         this(itemName, resourcesID, viewType, 0);
     }
-
+    public DanhMuc() {
+        // Constructor rỗng BẮT BUỘC cho Firestore mapping
+    }
     public DanhMuc(String itemName, int resourcesID, int viewType, int color) {
         this.itemName = itemName;
         this.resourcesID = resourcesID;

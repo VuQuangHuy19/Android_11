@@ -47,7 +47,8 @@ public class IncomeFragment extends Fragment {
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 4);
         recyclerView.setLayoutManager(layoutManager);
 
-        adapter = new DanhMucAdapter(danhMucList, new DanhMucAdapter.OnDanhMucClickListener() {
+        // SỬA Ở ĐÂY: Context trước, danhMucList sau
+        adapter = new DanhMucAdapter(requireContext(), danhMucList, new DanhMucAdapter.OnDanhMucClickListener() {
             @Override
             public void onCategoryClick(DanhMuc danhMuc) {
                 handleCategoryClick(danhMuc);
