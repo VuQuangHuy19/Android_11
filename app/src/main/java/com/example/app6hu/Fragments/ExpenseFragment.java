@@ -33,6 +33,8 @@ public class ExpenseFragment extends Fragment {
     private EditText edtDate, edtNote, edtAmount;
     private Button btnAddExpense;
     private String selectedCategory = "";
+    private DanhMucAdapter adapter;
+    private List<DanhMuc> categoryList;
 
     public ExpenseFragment() {}
 
@@ -58,6 +60,13 @@ public class ExpenseFragment extends Fragment {
         setupAddButton();
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Tải lại danh mục khi quay lại fragment
+        loadCategoriesFromFirebase();
     }
     
     private void setupDatePicker() {
@@ -156,8 +165,9 @@ public class ExpenseFragment extends Fragment {
     private void setupRecycler(RecyclerView recyclerView) {
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
 
-        DanhMucAdapter adapter = new DanhMucAdapter(
-                prepareDummyData(),
+        categoryList = new ArrayList<>();
+        adapter = new DanhMucAdapter(
+                categoryList,
                 new DanhMucAdapter.OnItemClickListener() {
                     @Override
                     public void onCategoryClick(DanhMuc item) {
@@ -175,14 +185,26 @@ public class ExpenseFragment extends Fragment {
         );
 
         recyclerView.setAdapter(adapter);
+        
+        // Lấy danh mục từ Firebase
+        loadCategoriesFromFirebase();
     }
+    
+    private void loadCategoriesFromFirebase() {
+        firestoreManager.getCategories(new FirebasestoreManager.OnCategoriesLoadedListener() {
+            @Override
+            public void onCategoriesLoaded(List<DanhMuc> categories) {
+                categoryList.clear();
+                categoryList.addAll(categories);
+                // Thêm nút "Thêm" vào cuối danh sách
+                categoryList.add(new DanhMuc("Thêm", R.drawable.ic_plus, DanhMuc.TYPE_ADD));
+                adapter.notifyDataSetChanged();
+            }
 
-    private List<DanhMuc> prepareDummyData() {
-        List<DanhMuc> list = new ArrayList<>();
-        for (int i = 1; i <= 12; i++) {
-            list.add(new DanhMuc("Chi tiêu " + i, R.drawable.ic_logo, DanhMuc.TYPE_CATEGORY));
-        }
-        list.add(new DanhMuc("Thêm", R.drawable.ic_plus, DanhMuc.TYPE_ADD));
-        return list;
+            @Override
+            public void onError(String error) {
+                Toast.makeText(getContext(), "Lỗi tải danh mục: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

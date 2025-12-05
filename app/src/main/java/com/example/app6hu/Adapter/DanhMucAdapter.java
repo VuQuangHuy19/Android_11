@@ -18,6 +18,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private final List<DanhMuc> danhMucList;
     private OnItemClickListener listener;
+    private int selectedPosition = -1; // Vị trí item được chọn
 
     // Listener cho click
     public interface OnItemClickListener {
@@ -39,17 +40,20 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public static class CategoryViewHolder extends RecyclerView.ViewHolder {
         ImageView itemIcon;
         TextView itemName;
+        ImageView itemCheck;
 
         public CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
             itemIcon = itemView.findViewById(R.id.item_icon);
             itemName = itemView.findViewById(R.id.item_name);
+            itemCheck = itemView.findViewById(R.id.item_check);
         }
 
-        public void bind(DanhMuc item) {
+        public void bind(DanhMuc item, boolean isSelected) {
             itemIcon.setImageResource(item.getResourcesID());
             if (item.getColor() != 0) itemIcon.setColorFilter(item.getColor());
             itemName.setText(item.getItemName());
+            itemCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -93,9 +97,19 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         if (holder instanceof CategoryViewHolder) {
             CategoryViewHolder vh = (CategoryViewHolder) holder;
-            vh.bind(item);
+            vh.bind(item, position == selectedPosition);
 
             vh.itemView.setOnClickListener(v -> {
+                // Cập nhật vị trí được chọn
+                int previousPosition = selectedPosition;
+                selectedPosition = position;
+                
+                // Cập nhật UI
+                if (previousPosition != -1) {
+                    notifyItemChanged(previousPosition);
+                }
+                notifyItemChanged(selectedPosition);
+                
                 if (listener != null) listener.onCategoryClick(item);
             });
 

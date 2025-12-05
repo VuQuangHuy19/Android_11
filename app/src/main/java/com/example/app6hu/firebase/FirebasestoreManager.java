@@ -3,6 +3,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.app6hu.model.DanhMuc;
 import com.example.app6hu.model.Goal;
 import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.Constants;
@@ -187,6 +188,91 @@ public class FirebasestoreManager {private static final String TAG = "FirestoreM
                         callback.onFailure(task.getException());
                     }
                 });
+    }
+
+    // ========== CATEGORIES METHODS ==========
+
+    /** Lấy danh sách danh mục từ Firebase */
+    public void getCategories(OnCategoriesLoadedListener listener) {
+        db.collection("danh_muc")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<DanhMuc> categories = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            String name = doc.getString("name");
+                            String iconName = doc.getString("icon");
+                            
+                            // Lấy resource ID của icon (mặc định là ic_logo nếu không tìm thấy)
+                            int iconResId = com.example.app6hu.R.drawable.ic_logo;
+                            
+                            DanhMuc category = new DanhMuc(name, iconResId, DanhMuc.TYPE_CATEGORY);
+                            category.setId(doc.getId());
+                            categories.add(category);
+                        }
+                        listener.onCategoriesLoaded(categories);
+                    } else {
+                        listener.onError(task.getException() != null ? 
+                            task.getException().getMessage() : "Lỗi không xác định");
+                    }
+                });
+    }
+
+    /** Thêm danh mục mới vào Firebase */
+    public void addCategory(String categoryName, String iconName, OnCategoryAddedListener listener) {
+        Map<String, Object> category = new HashMap<>();
+        category.put("name", categoryName);
+        category.put("icon", iconName);
+        category.put("createdAt", com.google.firebase.Timestamp.now());
+
+        db.collection("danh_muc")
+                .add(category)
+                .addOnSuccessListener(documentReference -> {
+                    Log.d(TAG, "Danh mục đã thêm: " + documentReference.getId());
+                    if (listener != null) {
+                        listener.onCategoryAdded(documentReference.getId());
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Lỗi khi thêm danh mục", e);
+                    if (listener != null) {
+                        listener.onError(e.getMessage());
+                    }
+                });
+    }
+
+    /** Xóa danh mục từ Firebase */
+    public void deleteCategory(String categoryId, OnCategoryDeletedListener listener) {
+        db.collection("danh_muc").document(categoryId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Xóa danh mục thành công");
+                    if (listener != null) {
+                        listener.onCategoryDeleted();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Lỗi khi xóa danh mục", e);
+                    if (listener != null) {
+                        listener.onError(e.getMessage());
+                    }
+                });
+    }
+
+    /** Interface callback cho danh mục */
+    public interface OnCategoriesLoadedListener {
+        void onCategoriesLoaded(List<DanhMuc> categories);
+        void onError(String error);
+    }
+
+    public interface OnCategoryAddedListener {
+        void onCategoryAdded(String categoryId);
+        void onError(String error);
+    }
+
+    public interface OnCategoryDeletedListener {
+        void onCategoryDeleted();
+        void onError(String error);
     }
 
     /** Interface callback */

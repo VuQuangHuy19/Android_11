@@ -5,6 +5,7 @@ public class DanhMuc {
     public static final int TYPE_CATEGORY = 0;
     public static final int TYPE_ADD = 1;
 
+    private String id;
     private String itemName;
     private int resourcesID;
     private int viewType;
@@ -43,5 +44,13 @@ public class DanhMuc {
 
     public int getColor() {
         return color;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

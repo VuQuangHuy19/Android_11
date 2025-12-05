@@ -17,7 +17,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.app6hu.Adapter.ThemDanhMucAdapter;
 import com.example.app6hu.R;
+import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.DanhMuc;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,7 @@ public class ThemDanhMucActivity extends AppCompatActivity {
     private RecyclerView rcvDanhMuc;
     private ThemDanhMucAdapter adapter;
     private List<DanhMuc> danhMucList;
+    private FirebasestoreManager firestoreManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +44,7 @@ public class ThemDanhMucActivity extends AppCompatActivity {
         });
 
         rcvDanhMuc = findViewById(R.id.rcvDanhMuc);
+        firestoreManager = new FirebasestoreManager();
 
         ImageView btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
@@ -51,11 +55,8 @@ public class ThemDanhMucActivity extends AppCompatActivity {
             startActivity(new Intent(ThemDanhMucActivity.this, ThemMoiDanhMucActivity.class));
         });
 
-        // Tạo dữ liệu giả lập
+        // Khởi tạo danh sách
         danhMucList = new ArrayList<>();
-        for (int i = 1; i <= 12; i++) {
-            danhMucList.add(new DanhMuc("Danh mục " + i, R.drawable.ic_logo, DanhMuc.TYPE_CATEGORY));
-        }
 
         adapter = new ThemDanhMucAdapter(this, danhMucList, (item, position) -> {
             // Nhấn vào danh mục → mở sửa danh mục
@@ -66,6 +67,9 @@ public class ThemDanhMucActivity extends AppCompatActivity {
 
         rcvDanhMuc.setLayoutManager(new LinearLayoutManager(this));
         rcvDanhMuc.setAdapter(adapter);
+        
+        // Lấy danh mục từ Firebase
+        loadCategoriesFromFirebase();
 
         // Vuốt để xóa
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
@@ -87,12 +91,58 @@ public class ThemDanhMucActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(rcvDanhMuc);
     }
 
+    private void loadCategoriesFromFirebase() {
+        firestoreManager.getCategories(new FirebasestoreManager.OnCategoriesLoadedListener() {
+            @Override
+            public void onCategoriesLoaded(List<DanhMuc> categories) {
+                danhMucList.clear();
+                danhMucList.addAll(categories);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(String error) {
+                Toast.makeText(ThemDanhMucActivity.this, "Lỗi tải danh mục: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void showDeleteDialog(int position) {
         new AlertDialog.Builder(this)
                 .setTitle("Xóa danh mục")
                 .setMessage("Bạn có muốn xóa danh mục này không?")
-                .setPositiveButton("Ok", (dialog, which) -> adapter.removeItem(position))
+                .setPositiveButton("Ok", (dialog, which) -> {
+                    DanhMuc category = danhMucList.get(position);
+                    if (category.getId() != null) {
+                        deleteCategoryFromFirebase(category.getId(), position);
+                    } else {
+                        adapter.removeItem(position);
+                    }
+                })
                 .setNegativeButton("Bỏ qua", (dialog, which) -> adapter.notifyItemChanged(position))
                 .show();
+    }
+
+    private void deleteCategoryFromFirebase(String categoryId, int position) {
+        firestoreManager.deleteCategory(categoryId, new FirebasestoreManager.OnCategoryDeletedListener() {
+            @Override
+            public void onCategoryDeleted() {
+                Toast.makeText(ThemDanhMucActivity.this, "Đã xóa danh mục", Toast.LENGTH_SHORT).show();
+                adapter.removeItem(position);
+            }
+
+            @Override
+            public void onError(String error) {
+                Toast.makeText(ThemDanhMucActivity.this, "Lỗi xóa danh mục: " + error, Toast.LENGTH_SHORT).show();
+                adapter.notifyItemChanged(position);
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Tải lại danh mục khi quay lại activity
+        loadCategoriesFromFirebase();
     }
 }
