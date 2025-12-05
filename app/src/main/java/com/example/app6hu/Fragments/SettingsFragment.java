@@ -25,7 +25,7 @@ import com.example.app6hu.MainActivity;
 import com.example.app6hu.R;
 import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.Export;
-import com.google.firebase.auth.FirebaseAuth;
+
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -157,12 +157,9 @@ public class SettingsFragment extends Fragment {
     }
 
     private void loadTransactions(FirebaseCallback callback) {
-        String userId = FirebaseAuth.getInstance().getUid();
 
-        if (userId == null) {
-            callback.onResult(null);
-            return;
-        }
+        // Vì bạn không dùng đăng nhập FirebaseAuth, bạn tự đặt userId cố định
+        String userId = "default_user";
 
         DatabaseReference ref = FirebaseDatabase.getInstance()
                 .getReference("transactions")
@@ -183,6 +180,7 @@ public class SettingsFragment extends Fragment {
             }
         });
     }
+
 
     interface FirebaseCallback {
         void onResult(List<Transaction> list);

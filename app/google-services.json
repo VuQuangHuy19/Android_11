@@ -1,26 +1,45 @@
 {
   "project_info": {
-    "project_number": "796293450427",
-    "project_id": "app6hu",
-    "storage_bucket": "app6hu.firebasestorage.app"
+    "project_number": "758270608106",
+    "firebase_url": "https://taichinh-42235-default-rtdb.firebaseio.com",
+    "project_id": "taichinh-42235",
+    "storage_bucket": "taichinh-42235.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:796293450427:android:f5ed7231cf8f7747dfb79e",
+        "mobilesdk_app_id": "1:758270608106:android:9c1396731e8a96b48a0d93",
         "android_client_info": {
           "package_name": "com.example.app6hu"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "758270608106-hk4i1usj1qnatii91dtu6jbqkqkeid9g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app6hu",
+            "certificate_hash": "6d5d7f33087391e5373781cf72aed1ce1bcf0993"
+          }
+        },
+        {
+          "client_id": "758270608106-1gv0dlhk5h5sm5h5rvo2mf3sddnsvbqa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDk9byKDgfuAdZOQg65_g2a6XYpp5IOgNE"
+          "current_key": "AIzaSyDmLfROXA8J-GkQ57dlSMQ0cKqcDyzmC1Y"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "758270608106-1gv0dlhk5h5sm5h5rvo2mf3sddnsvbqa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

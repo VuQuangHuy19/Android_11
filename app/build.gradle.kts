@@ -68,9 +68,10 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 
 // Firebase products (phiên bản quản lý bởi BOM)
+    implementation("com.google.firebase:firebase-database:21.0.0")
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-firestore:25.1.1")
 
 // Google Sign-In (Play services)
-    implementation("com.google.android.gms:play-services-auth:21.4.0")
+
 }
