@@ -1,5 +1,7 @@
 package com.example.app6hu.Adapter;
 
+import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,18 +17,20 @@ import com.example.app6hu.model.DanhMuc;
 import java.util.List;
 
 public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final String TAG = "DanhMucAdapter";
 
     private final List<DanhMuc> danhMucList;
-    private OnItemClickListener listener;
-    private int selectedPosition = -1; // Vị trí item được chọn
+    private final OnDanhMucClickListener listener;
+    private int selectedPosition = -1;
+    private final Context context;
 
-    // Listener cho click
-    public interface OnItemClickListener {
+    public interface OnDanhMucClickListener {
         void onCategoryClick(DanhMuc item);
         void onAddClick();
     }
 
-    public DanhMucAdapter(List<DanhMuc> danhMucList, OnItemClickListener listener) {
+    public DanhMucAdapter(Context context, List<DanhMuc> danhMucList, OnDanhMucClickListener listener) {
+        this.context = context;
         this.danhMucList = danhMucList;
         this.listener = listener;
     }
@@ -36,28 +40,49 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return danhMucList.get(position).getViewType();
     }
 
-    // Holder danh mục
+    // ========== CATEGORY HOLDER ==========
     public static class CategoryViewHolder extends RecyclerView.ViewHolder {
         ImageView itemIcon;
         TextView itemName;
-        ImageView itemCheck;
+        View cardView;
 
         public CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
+            cardView = itemView;
             itemIcon = itemView.findViewById(R.id.item_icon);
             itemName = itemView.findViewById(R.id.item_name);
-            itemCheck = itemView.findViewById(R.id.item_check);
         }
 
-        public void bind(DanhMuc item, boolean isSelected) {
-            itemIcon.setImageResource(item.getResourcesID());
-            if (item.getColor() != 0) itemIcon.setColorFilter(item.getColor());
+        public void bind(Context ctx, DanhMuc item, boolean isSelected) {
+
+            // Load icon từ resourcesID (đã convert từ Firestore)
+            if (item.getResourcesID() != 0) {
+                itemIcon.setImageResource(item.getResourcesID());
+            } else {
+                itemIcon.setImageResource(R.drawable.ic_logo);
+            }
+
+            // Màu icon
+            if (item.getColor() != 0) {
+                itemIcon.setColorFilter(item.getColor());
+            } else {
+                itemIcon.clearColorFilter();
+            }
+
             itemName.setText(item.getItemName());
-            itemCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
+
+            // UI khi selected
+            if (isSelected) {
+                cardView.setBackgroundResource(R.drawable.bg_danh_muc_selected);
+                itemName.setTextColor(ctx.getColor(R.color.primary_color));
+            } else {
+                cardView.setBackgroundResource(R.drawable.bg_danh_muc_item);
+                itemName.setTextColor(ctx.getColor(android.R.color.black));
+            }
         }
     }
 
-    // Holder nút thêm
+    // ========== ADD HOLDER ==========
     public static class AddViewHolder extends RecyclerView.ViewHolder {
         ImageView itemIcon;
         TextView itemName;
@@ -68,68 +93,70 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             itemName = itemView.findViewById(R.id.item_name);
         }
 
-        public void bind(DanhMuc item) {
-            itemIcon.setImageResource(item.getResourcesID());
-            itemName.setText(item.getItemName());
+        public void bind() {
+            itemIcon.setImageResource(R.drawable.ic_add);
+            itemName.setText("Thêm");
         }
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view;
 
         if (viewType == DanhMuc.TYPE_CATEGORY) {
-            view = inflater.inflate(R.layout.item_danh_muc, parent, false);
+            View view = inflater.inflate(R.layout.item_danh_muc, parent, false);
             return new CategoryViewHolder(view);
         } else {
-            view = inflater.inflate(R.layout.item_add, parent, false);
+            View view = inflater.inflate(R.layout.item_add, parent, false);
             return new AddViewHolder(view);
         }
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-
+        Log.d("DanhMucAdapter", "onBindViewHolder position: " + position);
         DanhMuc item = danhMucList.get(position);
+        Log.d("DanhMucAdapter", "Item: " + item.getItemName() + ", Type: " + item.getViewType());
 
         if (holder instanceof CategoryViewHolder) {
+            Log.d("DanhMucAdapter", "Binding CategoryViewHolder");
             CategoryViewHolder vh = (CategoryViewHolder) holder;
-            vh.bind(item, position == selectedPosition);
+            boolean isSelected = (selectedPosition == position);
+            vh.bind(context, item, isSelected);
 
             vh.itemView.setOnClickListener(v -> {
-                // Cập nhật vị trí được chọn
-                int previousPosition = selectedPosition;
-                selectedPosition = position;
-                
-                // Cập nhật UI
-                if (previousPosition != -1) {
-                    notifyItemChanged(previousPosition);
-                }
-                notifyItemChanged(selectedPosition);
-                
-                if (listener != null) listener.onCategoryClick(item);
+                int pos = vh.getAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+
+                int prev = selectedPosition;
+                selectedPosition = pos;
+
+                if (prev != -1) notifyItemChanged(prev);
+                notifyItemChanged(pos);
+
+                listener.onCategoryClick(danhMucList.get(pos));
             });
+
 
         } else if (holder instanceof AddViewHolder) {
+            Log.d("DanhMucAdapter", "Binding AddViewHolder");
             AddViewHolder vh = (AddViewHolder) holder;
-            vh.bind(item);
+            vh.bind();
 
-            vh.itemView.setOnClickListener(v -> {
-                if (listener != null) listener.onAddClick();
-            });
+            vh.itemView.setOnClickListener(v -> listener.onAddClick());
         }
     }
 
     @Override
     public int getItemCount() {
-        return danhMucList == null ? 0 : danhMucList.size();
+        return danhMucList.size();
     }
 
-    public void removeItem(int position) {
-        danhMucList.remove(position);
-        notifyItemRemoved(position);
+    public void updateData(List<DanhMuc> newList) {
+        danhMucList.clear();
+        danhMucList.addAll(newList);
+        selectedPosition = -1;
+        notifyDataSetChanged();
     }
 }

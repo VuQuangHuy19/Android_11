@@ -54,8 +54,7 @@ public class ThemMoiDanhMucActivity extends AppCompatActivity {
         }
 
         // Lưu lên Firebase (icon mặc định là "ic_logo") - không chờ kết quả
-        firestoreManager.addCategory(categoryName, "ic_logo", null);
-        
+
         // Hiển thị thông báo và finish ngay lập tức
         Toast.makeText(this, "✅ Đang thêm danh mục...", Toast.LENGTH_SHORT).show();
         finish();
