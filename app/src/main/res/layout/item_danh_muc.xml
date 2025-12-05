@@ -2,35 +2,41 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_margin="6dp"
+    android:layout_width="0dp"
+    android:layout_height="100dp"
+    android:layout_margin="4dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:cardUseCompatPadding="true">
 
     <LinearLayout
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
+        android:background="@drawable/bg_danh_muc_item"
         android:padding="8dp">
 
         <ImageView
             android:id="@+id/item_icon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:contentDescription="Danh mục Icon"
-            android:src="@drawable/ic_logo" />
+            android:src="@drawable/ic_logo"
+            android:scaleType="centerCrop" />
 
         <TextView
             android:id="@+id/item_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_width="9dp"
+            android:layout_height="31dp"
+            android:layout_marginTop="8dp"
             android:gravity="center"
             android:maxLines="2"
             android:text="Tên Danh Mục"
-            android:textSize="12sp" />
+            android:textColor="@color/black"
+            android:textSize="11sp"
+            android:textStyle="normal" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

@@ -3,6 +3,7 @@ package com.example.app6hu.Activities;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 
 import androidx.activity.EdgeToEdge;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.app6hu.Adapter.ThemDanhMucAdapter;
 import com.example.app6hu.R;
+import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.DanhMuc;
 
 import java.util.ArrayList;
@@ -46,16 +48,14 @@ public class ThemDanhMucActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         ImageView btnAdd = findViewById(R.id.btnAddDanhMuc);
+
+        FirebasestoreManager fr = new FirebasestoreManager();
         btnAdd.setOnClickListener(v -> {
             // Chuyển sang Activity tạo danh mục mới
             startActivity(new Intent(ThemDanhMucActivity.this, ThemMoiDanhMucActivity.class));
         });
 
-        // Tạo dữ liệu giả lập
         danhMucList = new ArrayList<>();
-        for (int i = 1; i <= 12; i++) {
-            danhMucList.add(new DanhMuc("Danh mục " + i, R.drawable.ic_logo, DanhMuc.TYPE_CATEGORY));
-        }
 
         adapter = new ThemDanhMucAdapter(this, danhMucList, (item, position) -> {
             // Nhấn vào danh mục → mở sửa danh mục
@@ -64,8 +64,36 @@ public class ThemDanhMucActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+
         rcvDanhMuc.setLayoutManager(new LinearLayoutManager(this));
         rcvDanhMuc.setAdapter(adapter);
+//        fr.getDanhMucByType("expense",new FirebasestoreManager.FirestoreCallback<List<DanhMuc>>() {
+//            @Override
+//            public void onSuccess(List<DanhMuc> data) {
+//                danhMucList.clear();
+//                danhMucList.addAll(data);
+//                adapter.notifyDataSetChanged();
+//            }
+//
+//            @Override
+//            public void onFailure(Exception e) {
+//                Log.e("FIREBASE", "Lỗi tải danh mục: " + e.getMessage());
+//            }
+//        });
+//
+//        fr.getDanhMucByType("income",new FirebasestoreManager.FirestoreCallback<List<DanhMuc>>() {
+//            @Override
+//            public void onSuccess(List<DanhMuc> data) {
+//                danhMucList.clear();
+//                danhMucList.addAll(data);
+//                adapter.notifyDataSetChanged();
+//            }
+//
+//            @Override
+//            public void onFailure(Exception e) {
+//                Log.e("FIREBASE", "Lỗi tải danh mục: " + e.getMessage());
+//            }
+//        });
 
         // Vuốt để xóa
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,

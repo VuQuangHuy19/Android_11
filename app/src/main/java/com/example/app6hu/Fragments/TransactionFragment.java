@@ -18,60 +18,63 @@ public class TransactionFragment extends Fragment {
 
     private Button btnChi, btnThu;
 
-    public TransactionFragment() {
-        // Required empty public constructor
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        // ⭐ Inflate đúng
         View view = inflater.inflate(R.layout.fragment_transaction, container, false);
 
-        // ⭐ Ánh xạ đúng
         btnChi = view.findViewById(R.id.over_btn);
         btnThu = view.findViewById(R.id.chart_btn);
 
-        // ⭐ Mặc định mở Chi (hoặc đổi tùy bạn muốn)
+        // ⭐ Mặc định mở Chi tiêu
+        setSelectedTab(true);
         loadFragment(new ExpenseFragment());
 
-        // ⭐ Xử lý nút Chi
+        // ⭐ Chi tiêu
         btnChi.setOnClickListener(v -> {
-            updateTabUI(true);
+            if (!btnChi.isEnabled()) return; // đang được chọn → không làm gì
+            setSelectedTab(true);
             loadFragment(new ExpenseFragment());
         });
 
-        // ⭐ Xử lý nút Thu
+        // ⭐ Thu nhập
         btnThu.setOnClickListener(v -> {
-            updateTabUI(false);
+            if (!btnThu.isEnabled()) return;
+            setSelectedTab(false);
             loadFragment(new IncomeFragment());
         });
 
         return view;
     }
 
-    // ⭐ Load fragment con
+
+    // ⭐ Hàm load fragment con
     private void loadFragment(Fragment fragment) {
         getChildFragmentManager()
                 .beginTransaction()
-                .setCustomAnimations(
-                        R.anim.fade_in,  // fragment vào
-                        R.anim.fade_out  // fragment ra
-                )
+                .setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
                 .replace(R.id.fragOverView, fragment)
                 .commit();
     }
-    private void updateTabUI(boolean isExpenseSelected) {
-        if (isExpenseSelected) {
+
+    // ⭐ Cập nhật UI + disable nút
+    private void setSelectedTab(boolean isExpense) {
+        if (isExpense) {
+            // Chi tiêu được chọn
             btnChi.setBackgroundColor(getResources().getColor(R.color.orange));
+            btnChi.setEnabled(false);
+
             btnThu.setBackgroundColor(getResources().getColor(R.color.gray));
+            btnThu.setEnabled(true);
         } else {
+            // Thu nhập được chọn
             btnThu.setBackgroundColor(getResources().getColor(R.color.orange));
+            btnThu.setEnabled(false);
+
             btnChi.setBackgroundColor(getResources().getColor(R.color.gray));
+            btnChi.setEnabled(true);
         }
     }
-
-
-
 }
+

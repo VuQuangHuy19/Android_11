@@ -83,6 +83,12 @@ public class CalendarDayAdapter extends BaseAdapter {
         return convertView;
     }
 
+    //Tạo cái này để hiện từng ngày
+    public static class DaySummary {
+        public double income = 0;
+        public double expense = 0;
+    }
+
 
     private static class ViewHolder {
         TextView tvDayNumber;

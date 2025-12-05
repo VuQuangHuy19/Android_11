@@ -25,10 +25,7 @@ import com.example.app6hu.MainActivity;
 import com.example.app6hu.R;
 import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.Export;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -103,20 +100,7 @@ public class SettingsFragment extends Fragment {
         // Apply settings button
         btnApply.setOnClickListener(v -> applySettings());
 
-        btnExport.setOnClickListener(v -> {
-            loadTransactions(data -> {
-                if (data == null || data.isEmpty()) {
-                    Toast.makeText(getContext(), "Không có dữ liệu để xuất!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
 
-                File pdfFile = Export.exportReportPDF(requireContext(), data);
-
-                if (pdfFile != null) {
-                    Toast.makeText(getContext(), "Xuất thành công: " + pdfFile.getPath(), Toast.LENGTH_LONG).show();
-                }
-            });
-        });
 
     }
 
@@ -156,33 +140,7 @@ public class SettingsFragment extends Fragment {
         );
     }
 
-    private void loadTransactions(FirebaseCallback callback) {
-        String userId = FirebaseAuth.getInstance().getUid();
 
-        if (userId == null) {
-            callback.onResult(null);
-            return;
-        }
-
-        DatabaseReference ref = FirebaseDatabase.getInstance()
-                .getReference("transactions")
-                .child(userId);
-
-        ref.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                List<Transaction> list = new ArrayList<>();
-
-                for (DataSnapshot snap : task.getResult().getChildren()) {
-                    Transaction t = snap.getValue(Transaction.class);
-                    if (t != null) list.add(t);
-                }
-
-                callback.onResult(list);
-            } else {
-                callback.onResult(null);
-            }
-        });
-    }
 
     interface FirebaseCallback {
         void onResult(List<Transaction> list);
