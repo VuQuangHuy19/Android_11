@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự Đoán Chi Tiêu</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .chart-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+        .chart-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+        .category-list {
+            margin-top: 30px;
+        }
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .category-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .category-amount {
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        .refresh-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Dự Đoán Chi Tiêu</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Tổng Chi Tiêu Tháng Này</h3>
+                <div class="value" id="currentMonth">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Dự Đoán Tháng Sau</h3>
+                <div class="value" id="nextMonth">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Chi Tiêu Trung Bình</h3>
+                <div class="value" id="average">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Xu Hướng</h3>
+                <div class="value" id="trend">-</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Biểu Đồ Chi Tiêu Theo Thời Gian</div>
+            <canvas id="expenseChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Chi Tiêu Theo Danh Mục</div>
+            <canvas id="categoryChart"></canvas>
+        </div>
+
+        <div class="category-list" id="categoryList"></div>
+
+        <button class="refresh-btn" onclick="loadData()">🔄 Làm Mới Dữ Liệu</button>
+    </div>
+
+    <script>
+        let expenseChart, categoryChart;
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+
+        function loadData() {
+            // Web interface dùng sample data để demo
+            fetch('/api/predict?sample=true')
+                .then(response => response.json())
+                .then(data => {
+                    // Cập nhật thống kê
+                    document.getElementById('currentMonth').textContent = formatCurrency(data.current_month_total);
+                    document.getElementById('nextMonth').textContent = formatCurrency(data.predicted_next_month);
+                    document.getElementById('average').textContent = formatCurrency(data.average_expense);
+                    document.getElementById('trend').textContent = data.trend + (data.trend_percentage ? ' (' + data.trend_percentage + '%)' : '');
+
+                    // Vẽ biểu đồ chi tiêu theo thời gian
+                    const ctx1 = document.getElementById('expenseChart').getContext('2d');
+                    if (expenseChart) expenseChart.destroy();
+                    
+                    // Kiểm tra xem có dữ liệu không
+                    if (!data.monthly_data || data.monthly_data.length === 0) {
+                        console.warn('Không có dữ liệu tháng để hiển thị');
+                        return;
+                    }
+                    
+                    // Lấy giá trị cuối cùng của dữ liệu thực tế để nối với dự đoán
+                    const lastActualValue = data.monthly_data[data.monthly_data.length - 1].amount;
+                    const lastActualMonth = data.monthly_data[data.monthly_data.length - 1].month;
+                    
+                    // Cập nhật labels để có điểm nối (lặp lại tháng cuối)
+                    const allLabelsWithConnection = [
+                        ...data.monthly_data.map(d => d.month),
+                        lastActualMonth, // Lặp lại tháng cuối để nối điểm
+                        ...(data.predicted_data || []).map(d => d.month)
+                    ];
+                    
+                    // Tạo data dự đoán - nối từ điểm cuối của dữ liệu thực tế
+                    const predictedData = [
+                        ...data.monthly_data.map(() => null),
+                        lastActualValue, // Điểm nối từ dữ liệu thực tế
+                        ...(data.predicted_data || []).map(d => d.amount)
+                    ];
+                    
+                    expenseChart = new Chart(ctx1, {
+                        type: 'line',
+                        data: {
+                            labels: allLabelsWithConnection,
+                            datasets: [{
+                                label: 'Chi Tiêu Thực Tế',
+                                data: [
+                                    ...data.monthly_data.map(d => d.amount),
+                                    null, // null cho điểm nối
+                                    ...(data.predicted_data || []).map(() => null)
+                                ],
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                spanGaps: false
+                            }, {
+                                label: 'Dự Đoán',
+                                data: predictedData,
+                                borderColor: '#f093fb',
+                                backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                                borderDash: [5, 5],
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                spanGaps: false
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            if (context.parsed.y !== null) {
+                                                return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                            }
+                                            return '';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return formatCurrency(value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Vẽ biểu đồ theo danh mục
+                    const ctx2 = document.getElementById('categoryChart').getContext('2d');
+                    if (categoryChart) categoryChart.destroy();
+                    categoryChart = new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.category_predictions.map(c => c.category),
+                            datasets: [{
+                                data: data.category_predictions.map(c => c.predicted_amount),
+                                backgroundColor: [
+                                    '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                                    '#43e97b', '#fa709a', '#fee140', '#30cfd0'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return label + ': ' + formatCurrency(value) + ' (' + percentage + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Hiển thị danh sách danh mục
+                    const categoryList = document.getElementById('categoryList');
+                    categoryList.innerHTML = '<h2 style="margin-bottom: 20px; color: #333;">Dự Đoán Theo Danh Mục</h2>';
+                    data.category_predictions.forEach(cat => {
+                        const div = document.createElement('div');
+                        div.className = 'category-item';
+                        div.innerHTML = `
+                            <span class="category-name">${cat.category}</span>
+                            <span class="category-amount">${formatCurrency(cat.predicted_amount)}</span>
+                        `;
+                        categoryList.appendChild(div);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Không thể tải dữ liệu. Vui lòng thử lại!');
+                });
+        }
+
+        // Tải dữ liệu khi trang được tải
+        loadData();
+        // Tự động làm mới mỗi 30 giây
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
+

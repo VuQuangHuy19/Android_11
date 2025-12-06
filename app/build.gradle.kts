@@ -73,4 +73,7 @@ dependencies {
 
 // Google Sign-In (Play services)
     implementation("com.google.android.gms:play-services-auth:21.4.0")
+    
+    // HTTP client for API calls
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
