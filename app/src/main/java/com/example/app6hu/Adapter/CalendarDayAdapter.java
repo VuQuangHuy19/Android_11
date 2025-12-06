@@ -10,13 +10,15 @@ import android.widget.TextView;
 
 import com.example.app6hu.Fragments.CalendarFragment;
 import com.example.app6hu.R;
+import com.example.app6hu.utils.FormatUtils;
+
 import java.util.List;
 import java.util.Map;
 
 public class CalendarDayAdapter extends BaseAdapter {
 
     private final Context context;
-    private final List<Integer> days; // 0 => ô trống
+    private final List<Integer> days;
     private final LayoutInflater inflater;
     private Map<String, CalendarFragment.DaySummary> dailySummary;
 
@@ -29,6 +31,7 @@ public class CalendarDayAdapter extends BaseAdapter {
     public void setDailySummary(Map<String, CalendarFragment.DaySummary> map) {
         this.dailySummary = map;
     }
+
     @Override
     public Object getItem(int position) {
         return days == null ? null : days.get(position);
@@ -38,11 +41,12 @@ public class CalendarDayAdapter extends BaseAdapter {
     public long getItemId(int position) {
         return position;
     }
+
     @Override
     public int getCount() {
         return days == null ? 0 : days.size();
     }
-    // Đây là nơi bind dữ liệu cho item_calendar_day.xml
+
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
@@ -65,6 +69,8 @@ public class CalendarDayAdapter extends BaseAdapter {
             holder.tvDayNumber.setTextColor(Color.GRAY);
             holder.tvIncome.setText("");
             holder.tvExpense.setText("");
+            holder.tvIncome.setTextColor(Color.GRAY);
+            holder.tvExpense.setTextColor(Color.GRAY);
         } else {
             holder.tvDayNumber.setTextColor(Color.BLACK);
 
@@ -72,23 +78,30 @@ public class CalendarDayAdapter extends BaseAdapter {
                     dailySummary != null ? dailySummary.get(String.valueOf(absDay)) : null;
 
             if (sum != null) {
-                holder.tvIncome.setText("+" + (int)sum.income);
-                holder.tvExpense.setText("-" + (int)sum.expense);
+                // Sử dụng FormatUtils để format tiền
+                if (sum.income > 0) {
+                    holder.tvIncome.setText("+" + FormatUtils.formatCurrency(sum.income));
+                    holder.tvIncome.setTextColor(Color.parseColor("#FF4CAF50"));
+                } else {
+                    holder.tvIncome.setText("");
+                }
+
+                if (sum.expense > 0) {
+                    holder.tvExpense.setText("-" + FormatUtils.formatCurrency(sum.expense));
+                    holder.tvExpense.setTextColor(Color.parseColor("#FFF44336"));
+                } else {
+                    holder.tvExpense.setText("");
+                }
             } else {
-                holder.tvIncome.setText("+0");
-                holder.tvExpense.setText("-0");
+                holder.tvIncome.setText("");
+                holder.tvExpense.setText("");
+                holder.tvIncome.setTextColor(Color.GRAY);
+                holder.tvExpense.setTextColor(Color.GRAY);
             }
         }
 
         return convertView;
     }
-
-    //Tạo cái này để hiện từng ngày
-    public static class DaySummary {
-        public double income = 0;
-        public double expense = 0;
-    }
-
 
     private static class ViewHolder {
         TextView tvDayNumber;

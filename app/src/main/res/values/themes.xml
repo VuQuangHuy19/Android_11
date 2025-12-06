@@ -11,4 +11,27 @@
 
     <style name="Theme.App6Hu" parent="Base.Theme.App6Hu" />
 
+    <style name="MaterialDatePickerTheme" parent="ThemeOverlay.Material3.MaterialCalendar">
+        <!-- Màu cho button -->
+        <item name="materialButtonStyle">@style/DatePickerButtonStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+
+        <!-- Màu header -->
+        <item name="colorPrimary">#3F51B5</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+    </style>
+
+    <style name="DatePickerButtonStyle" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">#3F51B5</item>
+    </style>
+
+    <style name="PositiveButtonStyle" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">#1327B8</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="NegativeButtonStyle" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">#F44336</item>
+    </style>
 </resources>

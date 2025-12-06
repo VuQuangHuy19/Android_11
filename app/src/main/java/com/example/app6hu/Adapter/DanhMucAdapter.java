@@ -35,6 +35,15 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.listener = listener;
     }
 
+    // Thêm method này để xóa selection
+    public void clearSelection() {
+        int prevPosition = selectedPosition;
+        selectedPosition = -1;
+        if (prevPosition != -1) {
+            notifyItemChanged(prevPosition);
+        }
+    }
+
     @Override
     public int getItemViewType(int position) {
         return danhMucList.get(position).getViewType();
@@ -54,8 +63,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         public void bind(Context ctx, DanhMuc item, boolean isSelected) {
-
-            // Load icon từ resourcesID (đã convert từ Firestore)
+            // Load icon từ resourcesID
             if (item.getResourcesID() != 0) {
                 itemIcon.setImageResource(item.getResourcesID());
             } else {
@@ -95,7 +103,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         public void bind() {
             itemIcon.setImageResource(R.drawable.ic_add);
-            itemName.setText("Thêm");
+            itemName.setText("Thêm mới");
         }
     }
 
@@ -117,10 +125,8 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Log.d("DanhMucAdapter", "onBindViewHolder position: " + position);
         DanhMuc item = danhMucList.get(position);
-        Log.d("DanhMucAdapter", "Item: " + item.getItemName() + ", Type: " + item.getViewType());
 
         if (holder instanceof CategoryViewHolder) {
-            Log.d("DanhMucAdapter", "Binding CategoryViewHolder");
             CategoryViewHolder vh = (CategoryViewHolder) holder;
             boolean isSelected = (selectedPosition == position);
             vh.bind(context, item, isSelected);
@@ -138,9 +144,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 listener.onCategoryClick(danhMucList.get(pos));
             });
 
-
         } else if (holder instanceof AddViewHolder) {
-            Log.d("DanhMucAdapter", "Binding AddViewHolder");
             AddViewHolder vh = (AddViewHolder) holder;
             vh.bind();
 

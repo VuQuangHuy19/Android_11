@@ -1,24 +1,26 @@
 package com.example.app6hu.Fragments;
 
 import android.app.DatePickerDialog;
+import android.graphics.Color;
 import android.os.Bundle;
-
 import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.app6hu.Adapter.CalendarDayAdapter;
+import com.example.app6hu.Adapter.CalendarEntryAdapter;
 import com.example.app6hu.R;
 import com.example.app6hu.firebase.FirebasestoreManager;
+import com.example.app6hu.model.Calendars;
 import com.example.app6hu.model.Transaction;
+import com.example.app6hu.utils.FormatUtils;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -26,24 +28,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link CalendarFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class CalendarFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+    private ProgressBar progressBar;
     private GridView gridCalendar;
+    private Map<String, Map<String, DaySummary>> monthlyCache = new HashMap<>();
     private CalendarDayAdapter adapter;
     private List<Integer> dayList;
     private Calendar currentCalendar;
@@ -52,10 +46,13 @@ public class CalendarFragment extends Fragment {
     private ListView lvTransactions;
     private TextView tvTotalIncome, tvTotalExpense, tvTotalBalance;
 
-    // fake database
     private Map<String, List<Transaction>> transactionMap = new HashMap<>();
     private Map<String, DaySummary> dailySummary = new HashMap<>();
+    private List<Calendars> calendarEntries = new ArrayList<>();
+    private CalendarEntryAdapter entryAdapter;
 
+    // Map lưu vị trí đầu tiên của mỗi ngày trong list
+    private Map<Integer, Integer> dayPositionMap = new HashMap<>();
 
     private long lastClickTime = 0;
     private int lastClickPosition = -1;
@@ -63,20 +60,12 @@ public class CalendarFragment extends Fragment {
     public CalendarFragment() {
         // Required empty public constructor
     }
+
     public static class DaySummary {
         public double income = 0;
         public double expense = 0;
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment CalendarFragment.
-     */
-    // TODO: Rename and change types and number of parameters
     public static CalendarFragment newInstance(String param1, String param2) {
         CalendarFragment fragment = new CalendarFragment();
         Bundle args = new Bundle();
@@ -98,8 +87,8 @@ public class CalendarFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
         View v = inflater.inflate(R.layout.fragment_calendar, container, false);
+        progressBar = v.findViewById(R.id.progressBar);
 
         gridCalendar = v.findViewById(R.id.gridCalendar);
         tvMonthYear = v.findViewById(R.id.tvMonthYear);
@@ -115,8 +104,11 @@ public class CalendarFragment extends Fragment {
         adapter = new CalendarDayAdapter(requireContext(), dayList);
         gridCalendar.setAdapter(adapter);
 
+        calendarEntries = new ArrayList<>();
+        entryAdapter = new CalendarEntryAdapter(requireContext(), calendarEntries);
+        lvTransactions.setAdapter(entryAdapter);
+
         currentCalendar = Calendar.getInstance();
-        //generateFakeData();
         updateCalendar();
 
         btnPrevMonth.setOnClickListener(view -> {
@@ -134,19 +126,23 @@ public class CalendarFragment extends Fragment {
         gridCalendar.setOnItemClickListener((parent, view1, position, id) -> {
             long clickTime = System.currentTimeMillis();
             if (lastClickPosition == position && clickTime - lastClickTime < 400) {
-                // double click
                 int day = Math.abs(dayList.get(position));
                 Toast.makeText(requireContext(), "Double click: Add Transaction Day " + day, Toast.LENGTH_SHORT).show();
             } else {
-                // single click
                 int day = Math.abs(dayList.get(position));
-                showTransactionsOfDay(day);
+                scrollToDay(day);
             }
             lastClickTime = clickTime;
             lastClickPosition = position;
         });
 
         return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateCalendar();
     }
 
     private void showMonthYearPicker() {
@@ -164,127 +160,95 @@ public class CalendarFragment extends Fragment {
         dialog.show();
     }
 
-    private void showTransactionsOfDay(int day) {
-        int month = currentCalendar.get(Calendar.MONTH) + 1;
-        int year = currentCalendar.get(Calendar.YEAR);
+    private void scrollToDay(int day) {
+        if (dayPositionMap.containsKey(day)) {
+            int position = dayPositionMap.get(day);
 
-        FirebasestoreManager manager = new FirebasestoreManager();
-        manager.getTransactionsByMonth(month, year, new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
-            @Override
-            public void onSuccess(List<Transaction> list) {
+            // Scroll đến vị trí của ngày
+            lvTransactions.smoothScrollToPosition(position);
 
-                List<Transaction> result = new ArrayList<>();
-                Calendar cal = Calendar.getInstance();
+            // Sau khi scroll xong, highlight item đầu tiên của ngày
+            lvTransactions.postDelayed(() -> {
+                // Tính toán vị trí thực tế trên màn hình
+                int firstVisible = lvTransactions.getFirstVisiblePosition();
+                int lastVisible = lvTransactions.getLastVisiblePosition();
 
-                for (Transaction t : list) {
-                    cal.setTime(t.getDate());
-                    if (cal.get(Calendar.DAY_OF_MONTH) == day) {
-                        result.add(t);
+                if (position >= firstVisible && position <= lastVisible) {
+                    // Item đã hiển thị trên màn hình
+                    View view = lvTransactions.getChildAt(position - firstVisible);
+                    if (view != null) {
+                        // Highlight tạm thời
+                        view.setBackgroundColor(Color.parseColor("#E3F2FD"));
+
+                        // Xóa highlight sau 2 giây
+                        view.postDelayed(() -> {
+                            view.setBackgroundColor(Color.TRANSPARENT);
+                        }, 2000);
                     }
                 }
+            }, 300); // Delay để đảm bảo scroll đã hoàn thành
 
-                showListViewData(result, day);
-            }
+            // Tính và hiển thị tổng của ngày được chọn
+            calculateAndDisplayDayTotals(day);
 
-            @Override
-            public void onFailure(Exception e) {
+            Toast.makeText(requireContext(), "Đã chuyển đến ngày " + day, Toast.LENGTH_SHORT).show();
+        } else {
+            lvTransactions.smoothScrollToPosition(0);
+            Toast.makeText(requireContext(), "Ngày " + day + " không có giao dịch", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateSelectedDay(int selectedDay) {
+        // Có thể thêm logic highlight ngày được chọn ở đây
+        // Ví dụ: lưu lại ngày được chọn và cập nhật adapter
+    }
+
+    private void calculateAndDisplayDayTotals(int day) {
+        double dayIncome = 0;
+        double dayExpense = 0;
+
+        for (Calendars entry : calendarEntries) {
+            if (entry.getDay() == day) {
+                if (entry.isExpense()) {
+                    dayExpense += entry.getAmount();
+                } else {
+                    dayIncome += entry.getAmount();
+                }
             }
-        });
+        }
+
+        displayDayTotals(dayIncome, dayExpense, day);
     }
 
     private void updateCalendar() {
-        loadTransactionsFromFirebase();
-
-        // tạo dữ liệu mới cho dayList
         List<Integer> newDays = generateDaysForMonth(currentCalendar);
-
-        // cập nhật list trong adapter (thay vì tạo adapter mới)
         dayList.clear();
         dayList.addAll(newDays);
         adapter.notifyDataSetChanged();
 
-        // hiển thị tháng + năm cho người dùng (1..12)
         int monthHuman = currentCalendar.get(Calendar.MONTH) + 1;
         int year = currentCalendar.get(Calendar.YEAR);
-        // format đẹp: "11/2025"
         tvMonthYear.setText(String.format(Locale.getDefault(), "%02d/%d", monthHuman, year));
-    }
-    private String getDateKey(int year, int month, int day) {
-        return String.format("%04d-%02d-%02d", year, month, day); }
 
-    /*private void generateFakeData() {
-        // Fake data cố định cho tháng 11/2025
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.YEAR, 2025);
-        cal.set(Calendar.MONTH, Calendar.NOVEMBER); // Tháng 11
-
-        for (int d = 1; d <= 30; d++) { // giả lập 30 ngày
-            List<Transaction> list = new ArrayList<>();
-
-            // Thu nhập giả lập
-            Transaction income = new Transaction(
-                    "INCOME",
-                    50000 + d * 1000,
-                    "Lương",
-                    "Thu nhập ngày " + d,
-                    "\uD83D\uDCB0" // 💰
-            );
-            list.add(income);
-
-            // Chi tiêu giả lập
-            Transaction expense = new Transaction(
-                    "EXPENSE",
-                    10000 + d * 500,
-                    "Ăn uống",
-                    "Chi tiêu ngày " + d,
-                    "\uD83D\uDCB8" // 💸
-            );
-            list.add(expense);
-
-            transactionMap.put(getDateKey(2025, Calendar.NOVEMBER, d), list);
-        }
-    }*/
-    private void showListViewData(List<Transaction> list, int day) {
-
-        // Hiển thị giao dịch vào ListView
-        List<String> displayList = new ArrayList<>();
-
-        double income = 0;
-        double expense = 0;
-
-        for (Transaction t : list) {
-            String line = (t.getType().equals("INCOME") ? "[Thu] " : "[Chi] ")
-                    + t.getAmount()
-                    + " - " + t.getCategory()
-                    + " - " + t.getDetail();
-            displayList.add(line);
-
-            if (t.getType().equals("INCOME")) {
-                income += t.getAmount();
-            } else {
-                expense += t.getAmount();
-            }
-        }
-
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(requireContext(),
-                        android.R.layout.simple_list_item_1,
-                        displayList);
-
-        lvTransactions.setAdapter(adapter);
-
-        // Cập nhật TextView tổng thu - chi - số dư
-        tvTotalIncome.setText("+" + (int) income);
-        tvTotalExpense.setText("-" + (int) expense);
-        tvTotalBalance.setText(String.valueOf((int) (income - expense)));
-
-        Toast.makeText(requireContext(),
-                "Giao dịch ngày " + day,
-                Toast.LENGTH_SHORT).show();
+        loadTransactionsFromFirebase();
     }
 
     private void loadTransactionsFromFirebase() {
-        int month = currentCalendar.get(Calendar.MONTH) + 1;  // 1..12
+        String cacheKey = currentCalendar.get(Calendar.YEAR) + "-" + (currentCalendar.get(Calendar.MONTH) + 1);
+
+        if (monthlyCache.containsKey(cacheKey)) {
+            dailySummary = monthlyCache.get(cacheKey);
+            adapter.setDailySummary(dailySummary);
+            adapter.notifyDataSetChanged();
+            calculateAndDisplayMonthlyTotals();
+            return;
+        }
+
+        progressBar.setVisibility(View.VISIBLE);
+        calendarEntries.clear();
+        dayPositionMap.clear(); // Xóa map cũ
+
+        int month = currentCalendar.get(Calendar.MONTH) + 1;
         int year = currentCalendar.get(Calendar.YEAR);
 
         FirebasestoreManager manager = new FirebasestoreManager();
@@ -292,47 +256,183 @@ public class CalendarFragment extends Fragment {
         manager.getTransactionsByMonth(month, year, new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
             @Override
             public void onSuccess(List<Transaction> list) {
+                progressBar.setVisibility(View.GONE);
 
                 dailySummary.clear();
+                calendarEntries.clear();
+                dayPositionMap.clear();
+                double totalMonthIncome = 0;
+                double totalMonthExpense = 0;
 
                 Calendar cal = Calendar.getInstance();
+                Map<Integer, List<Transaction>> transactionsByDay = new HashMap<>();
 
+                // Nhóm transaction theo ngày
                 for (Transaction t : list) {
                     cal.setTime(t.getDate());
                     int day = cal.get(Calendar.DAY_OF_MONTH);
 
-                    String key = String.valueOf(day);
+                    if (!transactionsByDay.containsKey(day)) {
+                        transactionsByDay.put(day, new ArrayList<>());
+                    }
+                    transactionsByDay.get(day).add(t);
 
+                    String key = String.valueOf(day);
                     if (!dailySummary.containsKey(key))
                         dailySummary.put(key, new DaySummary());
 
-                    if (t.getType().equals("INCOME"))
+                    if (t.getType().equals("INCOME")) {
                         dailySummary.get(key).income += t.getAmount();
-                    else
+                        totalMonthIncome += t.getAmount();
+                    } else {
                         dailySummary.get(key).expense += t.getAmount();
+                        totalMonthExpense += t.getAmount();
+                    }
                 }
 
+                // Sắp xếp các ngày theo thứ tự tăng dần
+                List<Integer> sortedDays = new ArrayList<>(transactionsByDay.keySet());
+                java.util.Collections.sort(sortedDays);
+
+                // Chuyển đổi transactions thành Calendars entries và lưu vị trí
+                for (int day : sortedDays) {
+                    List<Transaction> dayTransactions = transactionsByDay.get(day);
+
+                    // Lưu vị trí đầu tiên của ngày này
+                    dayPositionMap.put(day, calendarEntries.size());
+
+                    // Lấy thứ trong tuần
+                    cal.set(Calendar.DAY_OF_MONTH, day);
+                    cal.set(Calendar.MONTH, month - 1);
+                    cal.set(Calendar.YEAR, year);
+                    int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+                    String dayName = getDayName(dayOfWeek);
+
+                    for (Transaction t : dayTransactions) {
+                        Calendars calendarEntry = new Calendars();
+                        calendarEntry.setDay(day);
+                        calendarEntry.setDayName(dayName + ", " + day + "/" + month);
+                        calendarEntry.setExpense(t.getType().equals("EXPENSE"));
+                        calendarEntry.setAmount(t.getAmount());
+                        calendarEntry.setCategory(t.getCategory());
+                        calendarEntry.setDescription(t.getDetail());
+                        calendarEntry.setIconResId(getIconForCategory(t.getCategory()));
+
+                        calendarEntries.add(calendarEntry);
+                    }
+                }
+
+                monthlyCache.put(cacheKey, new HashMap<>(dailySummary));
                 adapter.setDailySummary(dailySummary);
                 adapter.notifyDataSetChanged();
+
+                // Cập nhật ListView với tất cả giao dịch
+                entryAdapter.notifyDataSetChanged();
+                lvTransactions.setAdapter(entryAdapter);
+
+                displayMonthlyTotals(totalMonthIncome, totalMonthExpense);
             }
 
             @Override
-            public void onFailure(Exception e) { }
+            public void onFailure(Exception e) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), "Lỗi tải dữ liệu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                displayMonthlyTotals(0, 0);
+            }
         });
     }
 
-    /**
-     * Trả về danh sách 42 phần tử:
-     * - số dương => ngày của tháng hiện tại (1..daysInMonth)
-     * - số âm => ngày của tháng khác (âm để đánh dấu mờ)
-     */
+    private String getDayName(int dayOfWeek) {
+        switch (dayOfWeek) {
+            case Calendar.SUNDAY: return "CN";
+            case Calendar.MONDAY: return "T2";
+            case Calendar.TUESDAY: return "T3";
+            case Calendar.WEDNESDAY: return "T4";
+            case Calendar.THURSDAY: return "T5";
+            case Calendar.FRIDAY: return "T6";
+            case Calendar.SATURDAY: return "T7";
+            default: return "";
+        }
+    }
+
+    private int getIconForCategory(String category) {
+        // Map category name to icon resource
+        switch (category) {
+            case "Ăn uống": return R.drawable.ic_food;
+            case "Lương": return R.drawable.ic_salary;
+            case "Giải trí": return R.drawable.ic_entertain;
+            case "Đi lại": return R.drawable.ic_transport;
+            case "Quần áo": return R.drawable.ic_clothes;
+            case "Mỹ phẩm": return R.drawable.ic_cosmetic;
+            case "Y tế": return R.drawable.ic_health;
+            case "Giáo dục": return R.drawable.ic_education;
+            case "Quà": return R.drawable.ic_gift;
+            case "Hóa đơn": return R.drawable.ic_bill;
+            case "Tiền điện": return R.drawable.ic_electric;
+            case "Thưởng": return R.drawable.ic_bonus;
+            case "Phụ cấp": return R.drawable.ic_allowance;
+            case "Đầu tư": return R.drawable.ic_invest;
+            default: return R.drawable.ic_home;
+        }
+    }
+
+    private void displayMonthlyTotals(double totalIncome, double totalExpense) {
+        double totalBalance = totalIncome - totalExpense;
+
+        tvTotalIncome.setText("+" + FormatUtils.formatCurrency(totalIncome));
+        tvTotalExpense.setText("-" + FormatUtils.formatCurrency(totalExpense));
+
+        String balanceText = FormatUtils.formatCurrency(Math.abs(totalBalance));
+        if (totalBalance > 0) {
+            tvTotalBalance.setText("+" + balanceText);
+            tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_green_dark, null));
+        } else if (totalBalance < 0) {
+            tvTotalBalance.setText("-" + balanceText);
+            tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
+        } else {
+            tvTotalBalance.setText(FormatUtils.formatCurrency(0));
+            tvTotalBalance.setTextColor(Color.BLACK);
+        }
+    }
+
+    private void displayDayTotals(double dayIncome, double dayExpense, int day) {
+        // Hiển thị tổng của ngày được click
+        tvTotalIncome.setText("+" + FormatUtils.formatCurrency(dayIncome));
+        tvTotalExpense.setText("-" + FormatUtils.formatCurrency(dayExpense));
+
+        double dayBalance = dayIncome - dayExpense;
+        String balanceText = FormatUtils.formatCurrency(Math.abs(dayBalance));
+        if (dayBalance > 0) {
+            tvTotalBalance.setText("+" + balanceText);
+            tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_green_dark, null));
+        } else if (dayBalance < 0) {
+            tvTotalBalance.setText("-" + balanceText);
+            tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
+        } else {
+            tvTotalBalance.setText(FormatUtils.formatCurrency(0));
+            tvTotalBalance.setTextColor(Color.BLACK);
+        }
+    }
+
+    private void calculateAndDisplayMonthlyTotals() {
+        double totalMonthIncome = 0;
+        double totalMonthExpense = 0;
+
+        for (DaySummary summary : dailySummary.values()) {
+            totalMonthIncome += summary.income;
+            totalMonthExpense += summary.expense;
+        }
+
+        displayMonthlyTotals(totalMonthIncome, totalMonthExpense);
+    }
+
     private List<Integer> generateDaysForMonth(Calendar cal) {
         List<Integer> days = new ArrayList<>();
 
         Calendar calendar = (Calendar) cal.clone();
         calendar.set(Calendar.DAY_OF_MONTH, 1);
 
-        int dow = calendar.get(Calendar.DAY_OF_WEEK); // 1..7
+        int dow = calendar.get(Calendar.DAY_OF_WEEK);
         int offset = (dow + 5) % 7; // Monday=0
 
         int daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
@@ -342,9 +442,9 @@ public class CalendarFragment extends Fragment {
         prev.add(Calendar.MONTH, -1);
         int prevMonthDays = prev.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        // ADD BLANK DAYS – FIXED
+        // ADD BLANK DAYS – CHỈ 5 TUẦN (35 ô)
         for (int i = 0; i < offset; i++) {
-            days.add(-(prevMonthDays - offset + 1 + i)); // luôn chính xác số ngày
+            days.add(-(prevMonthDays - offset + 1 + i));
         }
 
         // current month
@@ -352,12 +452,11 @@ public class CalendarFragment extends Fragment {
             days.add(i);
         }
 
-        // next month
-        while (days.size() < 42) {
+        // next month - CHỈ ĐẾN KHI ĐỦ 35 Ô
+        while (days.size() < 35) {
             days.add(-(days.size() - daysInMonth - offset + 1));
         }
 
         return days;
     }
-
 }

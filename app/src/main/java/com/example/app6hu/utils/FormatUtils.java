@@ -1,8 +1,10 @@
 package com.example.app6hu.utils;
+
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
 public class FormatUtils {
 
     /** Định dạng tiền Việt Nam: 12.345.678đ */
@@ -11,10 +13,55 @@ public class FormatUtils {
         return formatter.format(amount) + "đ";
     }
 
-    /** Định dạng ngày: "yyyy-MM-dd" → "dd/MM/yyyy" */
+    /** Định dạng tiền với dấu +/- tùy theo giá trị */
+    public static String formatCurrencyWithSign(double amount) {
+        if (amount >= 0) {
+            return "+" + formatCurrency(amount);
+        } else {
+            return "-" + formatCurrency(Math.abs(amount));
+        }
+    }
+
+    /** Định dạng ngày: "dd/MM/yyyy" */
     public static String formatDate(Date date) {
         if (date == null) return "";
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         return sdf.format(date);
+    }
+
+    /** Định dạng ngày tháng: "Tháng MM/yyyy" */
+    public static String formatMonthYear(Date date) {
+        if (date == null) return "";
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/yyyy", Locale.getDefault());
+        return sdf.format(date);
+    }
+
+    /** Định dạng ngày tháng năm: "Ngày dd Tháng MM năm yyyy" */
+    public static String formatFullDate(Date date) {
+        if (date == null) return "";
+        SimpleDateFormat sdf = new SimpleDateFormat("'Ngày' dd 'Tháng' MM 'năm' yyyy", Locale.getDefault());
+        return sdf.format(date);
+    }
+
+    /** Định dạng số phần trăm: 12.34% */
+    public static String formatPercentage(double value) {
+        DecimalFormat formatter = new DecimalFormat("#,##0.00");
+        return formatter.format(value) + "%";
+    }
+
+    /** Định dạng số với dấu phẩy phân cách hàng nghìn */
+    public static String formatNumber(double number) {
+        DecimalFormat formatter = new DecimalFormat("#,###");
+        return formatter.format(number);
+    }
+
+    /** Định dạng số với số thập phân */
+    public static String formatDecimal(double number, int decimalPlaces) {
+        String pattern = "#,###.";
+        for (int i = 0; i < decimalPlaces; i++) {
+            pattern += "0";
+        }
+        DecimalFormat formatter = new DecimalFormat(pattern);
+        return formatter.format(number);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.app6hu.Fragments;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,6 +21,7 @@ import com.example.app6hu.R;
 import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.DanhMuc;
 import com.example.app6hu.model.Transaction;
+import com.google.android.material.datepicker.MaterialDatePicker;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public class ExpenseFragment extends Fragment {
     private EditText edtDate, edtNote, edtAmount;
     private Button btnAddExpense;
     private String selectedCategory = "";
+    private String selectedCategoryId = "";
     private FirebasestoreManager fr = new FirebasestoreManager();
 
     public ExpenseFragment() {
@@ -53,12 +56,43 @@ public class ExpenseFragment extends Fragment {
 
         // Tải danh mục từ Firestore
         loadDanhMucFromFirestore();
+
         edtDate = view.findViewById(R.id.chartDateSet);
         edtNote = view.findViewById(R.id.chartWriteSet);
         edtAmount = view.findViewById(R.id.chartMoneySet);
         btnAddExpense = view.findViewById(R.id.add_over);
+
+        // Setup các nút
+        setupDatePicker();
+        setupAddButton();
+
         return view;
     }
+
+    private void setupDatePicker() {
+        // Khởi tạo ngày mặc định là hôm nay
+        selectedDate = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        edtDate.setText(sdf.format(selectedDate.getTime()));
+
+        edtDate.setOnClickListener(v -> {
+            // Material Date Picker
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Chọn ngày")
+                    .setSelection(selectedDate.getTimeInMillis())
+                    .setTheme(R.style.MaterialDatePickerTheme)
+                    .build();
+
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                selectedDate.setTimeInMillis(selection);
+                edtDate.setText(sdf.format(selectedDate.getTime()));
+            });
+
+            datePicker.show(getParentFragmentManager(), "DATE_PICKER");
+            Toast.makeText(getContext(), "Chọn ngày", Toast.LENGTH_SHORT).show();
+        });
+    }
+
     private void setupAddButton() {
         btnAddExpense.setOnClickListener(v -> {
             String amountStr = edtAmount.getText().toString().trim();
@@ -91,6 +125,8 @@ public class ExpenseFragment extends Fragment {
                 transaction.setType("EXPENSE");
                 transaction.setAmount(amount);
                 transaction.setCategory(selectedCategory);
+
+
                 transaction.setDetail(note.isEmpty() ? "Không có ghi chú" : note);
                 transaction.setDate(selectedDate.getTime());
                 transaction.setIcon("💸");
@@ -124,7 +160,14 @@ public class ExpenseFragment extends Fragment {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         edtDate.setText(sdf.format(selectedDate.getTime()));
         selectedCategory = "";
+        selectedCategoryId = "";
+
+        // Reset selection trong adapter
+        if (adapter != null) {
+            adapter.clearSelection();
+        }
     }
+
     private void setupRecycler(RecyclerView recyclerView) {
         Log.d("ExpenseFragment", "setupRecycler được gọi");
 
@@ -132,7 +175,7 @@ public class ExpenseFragment extends Fragment {
         recyclerView.setLayoutManager(layoutManager);
 
         Log.d("ExpenseFragment", "DanhMucList size khi setup: " + danhMucList.size());
-        // SỬA Ở ĐÂY: Context trước, danhMucList sau
+
         adapter = new DanhMucAdapter(requireContext(), danhMucList, new DanhMucAdapter.OnDanhMucClickListener() {
             @Override
             public void onCategoryClick(DanhMuc danhMuc) {
@@ -202,85 +245,22 @@ public class ExpenseFragment extends Fragment {
         });
     }
 
-//    private void loadDanhMucFromFirestore() {
-//        // THÊM requireContext() vào đây
-//        Log.d("ExpenseFragment", "Bắt đầu load danh mục từ Firestore...");
-//        danhMucList.clear();
-//
-//        // Thêm một vài danh mục test
-//        danhMucList.add(new DanhMuc("Ăn uống", R.drawable.ic_food, DanhMuc.TYPE_CATEGORY, 0));
-//        danhMucList.add(new DanhMuc("Di chuyển", R.drawable.ic_transport, DanhMuc.TYPE_CATEGORY, 0));
-//        danhMucList.add(new DanhMuc("Mua sắm", R.drawable.ic_allowance, DanhMuc.TYPE_CATEGORY, 0));
-//
-//        // Thêm item "Thêm mới"
-//        DanhMuc addItem = new DanhMuc(
-//                "Thêm mới",
-//                R.drawable.ic_add,
-//                DanhMuc.TYPE_ADD,
-//                0
-//        );
-//        danhMucList.add(addItem);
-//
-//        Log.d("ExpenseFragment", "Test data: " + danhMucList.size() + " items");
-//
-//        adapter.notifyDataSetChanged();
-////        fr.getDanhMucByType("EXPENSE", requireContext(), new FirebasestoreManager.FirestoreCallback<List<DanhMuc>>() {
-////            @Override
-////            public void onSuccess(List<DanhMuc> data) {
-////                danhMucList.clear();
-////
-////                if (data != null && !data.isEmpty()) {
-////                    danhMucList.addAll(data);
-////                    Log.d("ExpenseFragment", "Loaded " + data.size() + " expense categories");
-////
-////                    // Debug: kiểm tra icon resource
-////                    for (DanhMuc dm : data) {
-////                        Log.d("ExpenseFragment", "Category: " + dm.getItemName() +
-////                                ", IconRes: " + dm.getResourcesID());
-////                    }
-////                }
-////
-////                // Thêm item "Thêm mới"
-////                DanhMuc addItem = new DanhMuc(
-////                        "Thêm mới",
-////                        R.drawable.ic_add,  // Đảm bảo có drawable này
-////                        DanhMuc.TYPE_ADD,
-////                        0
-////                );
-////                danhMucList.add(addItem);
-////
-////                adapter.notifyDataSetChanged();
-////            }
-////
-////            @Override
-////            public void onFailure(Exception e) {
-////                Toast.makeText(getContext(),
-////                        "Lỗi tải danh mục: " + e.getMessage(),
-////                        Toast.LENGTH_SHORT).show();
-////                e.printStackTrace();
-////            }
-////        });
-//    }
-
     private void handleCategoryClick(DanhMuc danhMuc) {
         // Xử lý khi click vào một danh mục
-        if (getActivity() != null) {
-            // Tạo Intent để chọn danh mục
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("selectedDanhMucId", danhMuc.getId());
-            resultIntent.putExtra("selectedDanhMucName", danhMuc.getItemName());
+        if (danhMuc.getViewType() == DanhMuc.TYPE_CATEGORY) {
+            // Lưu thông tin danh mục được chọn
+            selectedCategory = danhMuc.getItemName();
+            selectedCategoryId = danhMuc.getId();
 
-            // Trả về kết quả cho Activity cha (nếu cần)
-            if (getActivity().getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                getActivity().getSupportFragmentManager().popBackStack();
-            }
+            // Hiển thị feedback cho người dùng
+            Toast.makeText(getContext(),
+                    "Đã chọn: " + danhMuc.getItemName(),
+                    Toast.LENGTH_SHORT).show();
 
-            // Hoặc mở ThemDanhMucActivity để chỉnh sửa
-            Intent editIntent = new Intent(getActivity(), ThemDanhMucActivity.class);
-            editIntent.putExtra("danhMucId", danhMuc.getId());
-            editIntent.putExtra("danhMucName", danhMuc.getItemName());
-            editIntent.putExtra("type", "expense");
-            startActivity(editIntent);
+            Log.d("ExpenseFragment", "Selected category: " + selectedCategory + ", ID: " + selectedCategoryId);
+
+            // Cập nhật giao diện nếu cần
+            // Không cần gọi adapter.setSelectedCategory() vì adapter tự xử lý highlight
         }
     }
 
@@ -288,7 +268,7 @@ public class ExpenseFragment extends Fragment {
         // Mở Activity thêm danh mục mới
         if (getActivity() != null) {
             Intent intent = new Intent(getActivity(), ThemDanhMucActivity.class);
-            intent.putExtra("type", "expense"); // Truyền type để biết đây là danh mục chi tiêu
+            intent.putExtra("fromFragment", "expense");
             startActivity(intent);
         }
     }
@@ -297,6 +277,8 @@ public class ExpenseFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Tải lại danh sách khi quay lại fragment
-        loadDanhMucFromFirestore();
+        if (adapter != null) {
+            loadDanhMucFromFirestore();
+        }
     }
 }

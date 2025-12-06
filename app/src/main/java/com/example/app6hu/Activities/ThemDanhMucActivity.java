@@ -3,6 +3,7 @@ package com.example.app6hu.Activities;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 
 import androidx.activity.EdgeToEdge;
@@ -30,6 +31,7 @@ public class ThemDanhMucActivity extends AppCompatActivity {
     private ThemDanhMucAdapter adapter;
     private List<DanhMuc> danhMucList;
     private FirebasestoreManager firestoreManager;
+    private String fragmentType; // Biến lưu từ fragment nào gọi
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,29 +48,44 @@ public class ThemDanhMucActivity extends AppCompatActivity {
         rcvDanhMuc = findViewById(R.id.rcvDanhMuc);
         firestoreManager = new FirebasestoreManager();
 
+        // Lấy type từ Intent
+        fragmentType = getIntent().getStringExtra("fromFragment");
+
         ImageView btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
 
         ImageView btnAdd = findViewById(R.id.btnAddDanhMuc);
         btnAdd.setOnClickListener(v -> {
-            // Chuyển sang Activity tạo danh mục mới
-            startActivity(new Intent(ThemDanhMucActivity.this, ThemMoiDanhMucActivity.class));
+            // Chuyển sang Activity tạo danh mục mới với type tương ứng
+            Intent intent = new Intent(ThemDanhMucActivity.this, ThemMoiDanhMucActivity.class);
+            if (fragmentType != null) {
+                intent.putExtra("type", fragmentType);
+            }
+            startActivity(intent);
         });
 
         // Khởi tạo danh sách
         danhMucList = new ArrayList<>();
 
-        adapter = new ThemDanhMucAdapter(this, danhMucList, (item, position) -> {
-            // Nhấn vào danh mục → mở sửa danh mục
-            Intent intent = new Intent(ThemDanhMucActivity.this, SuaDanhMucActivity.class);
-            intent.putExtra("tenDanhMuc", item.getItemName());
-            startActivity(intent);
+        // Sửa lại Adapter để hỗ trợ click
+        adapter = new ThemDanhMucAdapter(this, danhMucList, new ThemDanhMucAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(DanhMuc item, int position) {
+                // Nhấn vào danh mục → mở sửa danh mục
+                Intent intent = new Intent(ThemDanhMucActivity.this, SuaDanhMucActivity.class);
+                intent.putExtra("danhMucId", item.getId());
+                intent.putExtra("danhMucName", item.getItemName());
+                intent.putExtra("danhMucType", item.getType());
+                intent.putExtra("iconName", item.getIconName());
+                intent.putExtra("color", item.getColor());
+                startActivity(intent);
+            }
         });
 
         rcvDanhMuc.setLayoutManager(new LinearLayoutManager(this));
         rcvDanhMuc.setAdapter(adapter);
-        
-        // Lấy danh mục từ Firebase
+
+        // Lấy danh mục từ Firebase - TRUYỀN CONTEXT
         loadCategoriesFromFirebase();
 
         // Vuốt để xóa
@@ -92,34 +109,63 @@ public class ThemDanhMucActivity extends AppCompatActivity {
     }
 
     private void loadCategoriesFromFirebase() {
-        firestoreManager.getCategories(new FirebasestoreManager.OnCategoriesLoadedListener() {
+        // Sử dụng FirestoreCallback thay vì OnCategoriesLoadedListener
+        firestoreManager.getAllDanhMuc(this, new FirebasestoreManager.FirestoreCallback<List<DanhMuc>>() {
             @Override
-            public void onCategoriesLoaded(List<DanhMuc> categories) {
+            public void onSuccess(List<DanhMuc> categories) {
                 danhMucList.clear();
-                danhMucList.addAll(categories);
+
+                if (categories != null && !categories.isEmpty()) {
+                    // Filter theo type nếu cần
+                    if (fragmentType != null) {
+                        for (DanhMuc category : categories) {
+                            if (fragmentType.equals(category.getType())) {
+                                danhMucList.add(category);
+                            }
+                        }
+                    } else {
+                        // Hiển thị tất cả
+                        danhMucList.addAll(categories);
+                    }
+
+                    Log.d("ThemDanhMucActivity", "Đã tải " + danhMucList.size() + " danh mục");
+                }
+
                 adapter.notifyDataSetChanged();
             }
 
             @Override
-            public void onError(String error) {
-                Toast.makeText(ThemDanhMucActivity.this, "Lỗi tải danh mục: " + error, Toast.LENGTH_SHORT).show();
+            public void onFailure(Exception e) {
+                Toast.makeText(ThemDanhMucActivity.this,
+                        "Lỗi tải danh mục: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+                Log.e("ThemDanhMucActivity", "Lỗi: " + e.getMessage());
             }
         });
     }
 
     private void showDeleteDialog(int position) {
+        if (position < 0 || position >= danhMucList.size()) {
+            return;
+        }
+
+        DanhMuc category = danhMucList.get(position);
+
         new AlertDialog.Builder(this)
                 .setTitle("Xóa danh mục")
-                .setMessage("Bạn có muốn xóa danh mục này không?")
-                .setPositiveButton("Ok", (dialog, which) -> {
-                    DanhMuc category = danhMucList.get(position);
-                    if (category.getId() != null) {
+                .setMessage("Bạn có muốn xóa danh mục '" + category.getItemName() + "' không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    if (category.getId() != null && !category.getId().isEmpty()) {
                         deleteCategoryFromFirebase(category.getId(), position);
                     } else {
-                        adapter.removeItem(position);
+                        Toast.makeText(this, "Không thể xóa, ID danh mục không hợp lệ", Toast.LENGTH_SHORT).show();
+                        adapter.notifyItemChanged(position);
                     }
                 })
-                .setNegativeButton("Bỏ qua", (dialog, which) -> adapter.notifyItemChanged(position))
+                .setNegativeButton("Hủy", (dialog, which) -> {
+                    // Khôi phục item đã swipe
+                    adapter.notifyItemChanged(position);
+                })
                 .show();
     }
 
@@ -127,14 +173,36 @@ public class ThemDanhMucActivity extends AppCompatActivity {
         firestoreManager.deleteCategory(categoryId, new FirebasestoreManager.OnCategoryDeletedListener() {
             @Override
             public void onCategoryDeleted() {
-                Toast.makeText(ThemDanhMucActivity.this, "Đã xóa danh mục", Toast.LENGTH_SHORT).show();
-                adapter.removeItem(position);
+                runOnUiThread(() -> {
+                    Toast.makeText(ThemDanhMucActivity.this,
+                            "Đã xóa danh mục thành công",
+                            Toast.LENGTH_SHORT).show();
+
+                    // Xóa khỏi danh sách local
+                    if (position >= 0 && position < danhMucList.size()) {
+                        danhMucList.remove(position);
+                        adapter.notifyItemRemoved(position);
+
+                        // Cập nhật lại các item phía sau
+                        if (position < danhMucList.size()) {
+                            adapter.notifyItemRangeChanged(position, danhMucList.size() - position);
+                        }
+                    }
+                });
             }
 
             @Override
             public void onError(String error) {
-                Toast.makeText(ThemDanhMucActivity.this, "Lỗi xóa danh mục: " + error, Toast.LENGTH_SHORT).show();
-                adapter.notifyItemChanged(position);
+                runOnUiThread(() -> {
+                    Toast.makeText(ThemDanhMucActivity.this,
+                            "Lỗi xóa danh mục: " + error,
+                            Toast.LENGTH_SHORT).show();
+
+                    // Khôi phục item trong list
+                    if (position >= 0 && position < danhMucList.size()) {
+                        adapter.notifyItemChanged(position);
+                    }
+                });
             }
         });
     }

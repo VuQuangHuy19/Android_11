@@ -7,7 +7,7 @@
     android:orientation="vertical"
     tools:context=".Fragments.CalendarFragment">
 
-
+    <!-- ===== Header ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -92,30 +92,75 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
 
         <!-- Các thứ trong tuần -->
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Th2" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Th3" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Th4" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Th5" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Th6" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Th7" android:textColor="#2196F3" />
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="CN" android:textColor="#F44336" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Th2"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Th3"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Th4"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Th5"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Th6"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Th7"
+            android:textColor="#2196F3"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="CN"
+            android:textColor="#F44336"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <!-- ===== Lịch ===== -->
     <GridView
         android:id="@+id/gridCalendar"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:numColumns="7"
-        android:horizontalSpacing="4dp"
-        android:verticalSpacing="4dp"
-        android:stretchMode="columnWidth"
-        android:padding="8dp"
-        android:background="#FFFFFF" />
+        android:layout_height="200dp"
+    android:background="#FFFFFF"
+    android:horizontalSpacing="1dp"
+    android:numColumns="7"
+    android:padding="4dp"
+    android:stretchMode="columnWidth"
+    android:verticalSpacing="1dp" />
 
     <!-- ===== Thống kê tổng ===== -->
     <LinearLayout
@@ -124,7 +169,8 @@
         android:background="#FFFFFF"
         android:elevation="1dp"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:padding="12dp"
+        android:layout_marginTop="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -138,16 +184,23 @@
                 android:layout_height="wrap_content"
                 android:text="Thu nhập"
                 android:textColor="#555"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvTotalIncome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="60,000đ"
+                android:text="+0đ"
                 android:textColor="#2196F3"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginHorizontal="8dp"
+            android:background="#E0E0E0" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -161,16 +214,23 @@
                 android:layout_height="wrap_content"
                 android:text="Chi tiêu"
                 android:textColor="#555"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvTotalExpense"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="600đ"
+                android:text="-0đ"
                 android:textColor="#F44336"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginHorizontal="8dp"
+            android:background="#E0E0E0" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -184,24 +244,48 @@
                 android:layout_height="wrap_content"
                 android:text="Tổng"
                 android:textColor="#555"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvTotalBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="59,400đ"
-                android:textColor="#2196F3"
+                android:text="0đ"
+                android:textColor="#4CAF50"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
+
+    <!-- ===== Tiêu đề danh sách ===== -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Giao dịch trong tháng"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:background="#FFFFFF" />
 
     <!-- ===== Danh sách khoản thu/chi ===== -->
     <ListView
         android:id="@+id/lvTransactions"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:dividerHeight="1dp"
-        android:background="#FFFFFF"
-        android:padding="8dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+    android:divider="@android:color/transparent"
+    android:dividerHeight="4dp"
+    android:background="#FFFFFF"
+    android:padding="8dp" />
+
+    <!-- ===== ProgressBar ===== -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
 </LinearLayout>

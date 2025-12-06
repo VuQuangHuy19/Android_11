@@ -1,7 +1,9 @@
 package com.example.app6hu.Fragments;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +21,7 @@ import com.example.app6hu.R;
 import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.DanhMuc;
 import com.example.app6hu.model.Transaction;
+import com.google.android.material.datepicker.MaterialDatePicker;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,6 +36,8 @@ public class IncomeFragment extends Fragment {
     private Calendar selectedDate;
     private EditText edtDate, edtNote, edtAmount;
     private String selectedCategory = "";
+    private String selectedCategoryId = "";
+
 
     private Button btnAddIncome;
 
@@ -53,17 +58,45 @@ public class IncomeFragment extends Fragment {
         edtAmount = view.findViewById(R.id.chartMoneySet);
         btnAddIncome = view.findViewById(R.id.add_over);
 
+        setupDatePicker();
         setupRecycler(recyclerView);
         loadDanhMucFromFirestore();
+        setupAddButton();
 
         return view;
     }
 
+        private void setupDatePicker() {
+            // Khởi tạo ngày mặc định là hôm nay
+            selectedDate = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            edtDate.setText(sdf.format(selectedDate.getTime()));
+
+            edtDate.setOnClickListener(v -> {
+                // Material Date Picker
+                MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                        .setTitleText("Chọn ngày")
+                        .setSelection(selectedDate.getTimeInMillis())
+                        .setTheme(R.style.MaterialDatePickerTheme)
+                        .build();
+
+                datePicker.addOnPositiveButtonClickListener(selection -> {
+                    selectedDate.setTimeInMillis(selection);
+                    edtDate.setText(sdf.format(selectedDate.getTime()));
+                });
+
+                datePicker.show(getParentFragmentManager(), "DATE_PICKER");
+                Toast.makeText(getContext(), "Chọn ngày", Toast.LENGTH_SHORT).show();
+            });
+        }
     private void setupRecycler(RecyclerView recyclerView) {
+        Log.d("IncomeFragment", "setupRecycler được gọi");
+
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 4);
         recyclerView.setLayoutManager(layoutManager);
 
-        // SỬA Ở ĐÂY: Context trước, danhMucList sau
+        Log.d("IncomeFragment", "DanhMucList size khi setup: " + danhMucList.size());
+
         adapter = new DanhMucAdapter(requireContext(), danhMucList, new DanhMucAdapter.OnDanhMucClickListener() {
             @Override
             public void onCategoryClick(DanhMuc danhMuc) {
@@ -80,14 +113,31 @@ public class IncomeFragment extends Fragment {
     }
 
     private void loadDanhMucFromFirestore() {
-        // THÊM requireContext() vào đây
+        Log.d("IncomeFragment", "Bắt đầu load danh mục từ Firestore...");
+
         fr.getDanhMucByType("income", requireContext(), new FirebasestoreManager.FirestoreCallback<List<DanhMuc>>() {
             @Override
             public void onSuccess(List<DanhMuc> data) {
+                Log.d("IncomeFragment", "onSuccess được gọi");
+                Log.d("IncomeFragment", "Số lượng data nhận được: " + (data == null ? "null" : data.size()));
+
                 danhMucList.clear();
 
                 if (data != null && !data.isEmpty()) {
+                    Log.d("IncomeFragment", "Có dữ liệu, thêm vào list");
                     danhMucList.addAll(data);
+
+                    // Debug chi tiết từng item
+                    for (int i = 0; i < data.size(); i++) {
+                        DanhMuc dm = data.get(i);
+                        Log.d("IncomeFragment", "Item " + i + ": " +
+                                "Name=" + dm.getItemName() +
+                                ", IconRes=" + dm.getResourcesID() +
+                                ", ID=" + dm.getId() +
+                                ", Type=" + dm.getType());
+                    }
+                } else {
+                    Log.d("IncomeFragment", "Không có dữ liệu hoặc data rỗng");
                 }
 
                 // Thêm item "Thêm mới"
@@ -99,32 +149,47 @@ public class IncomeFragment extends Fragment {
                 );
                 danhMucList.add(addItem);
 
+                Log.d("IncomeFragment", "Tổng số item trong danhMucList: " + danhMucList.size());
+
                 adapter.notifyDataSetChanged();
+                Log.d("IncomeFragment", "Đã gọi notifyDataSetChanged");
             }
 
             @Override
             public void onFailure(Exception e) {
+                Log.e("IncomeFragment", "Lỗi tải danh mục: " + e.getMessage(), e);
                 Toast.makeText(getContext(),
-                        "Lỗi tải danh mục thu nhập: " + e.getMessage(),
+                        "Lỗi tải danh mục: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
             }
         });
     }
 
     private void handleCategoryClick(DanhMuc danhMuc) {
-        if (getActivity() != null) {
-            Intent intent = new Intent(getActivity(), ThemDanhMucActivity.class);
-            intent.putExtra("danhMucId", danhMuc.getId());
-            intent.putExtra("danhMucName", danhMuc.getItemName());
-            intent.putExtra("type", "income");
-            startActivity(intent);
+        // Xử lý khi click vào một danh mục
+        if (danhMuc.getViewType() == DanhMuc.TYPE_CATEGORY) {
+            // Lưu thông tin danh mục được chọn
+            selectedCategory = danhMuc.getItemName();
+            selectedCategoryId = danhMuc.getId();
+
+            // Hiển thị feedback cho người dùng
+            Toast.makeText(getContext(),
+                    "Đã chọn: " + danhMuc.getItemName(),
+                    Toast.LENGTH_SHORT).show();
+
+            Log.d("ExpenseFragment", "Selected category: " + selectedCategory + ", ID: " + selectedCategoryId);
+
+            // Cập nhật giao diện nếu cần
+            // Không cần gọi adapter.setSelectedCategory() vì adapter tự xử lý highlight
         }
     }
 
     private void handleAddClick() {
+        // Mở Activity thêm danh mục mới
         if (getActivity() != null) {
             Intent intent = new Intent(getActivity(), ThemDanhMucActivity.class);
-            intent.putExtra("type", "income"); // Truyền type "income"
+            intent.putExtra("fromFragment", "income");
             startActivity(intent);
         }
     }
@@ -195,14 +260,7 @@ public class IncomeFragment extends Fragment {
         selectedCategory = "";
     }
 
-    private List<DanhMuc> prepareDummyData() {
-        List<DanhMuc> list = new ArrayList<>();
-        for (int i = 1; i <= 12; i++) {
-            list.add(new DanhMuc("Chi tiêu " + i, R.drawable.ic_logo, DanhMuc.TYPE_CATEGORY));
-        }
-        list.add(new DanhMuc("Thêm", R.drawable.ic_plus, DanhMuc.TYPE_ADD));
-        return list;
-    }
+
     @Override
     public void onResume() {
         super.onResume();

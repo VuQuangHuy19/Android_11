@@ -368,8 +368,18 @@
                         }
                     });
         }
+        public interface OnCategoriesLoadedListener {
+            void onCategoriesLoaded(List<DanhMuc> categories);
+            void onError(String error);
+        }
+
+        public interface OnCategoryDeletedListener {
+            void onCategoryDeleted();
+            void onError(String error);
+        }
         /** Lấy tất cả danh mục (không phân type) */
         public void getAllDanhMuc(Context context,FirestoreCallback<List<DanhMuc>> callback) {
+            Log.d(TAG, "getAllDanhMuc called với Context");
             db.collection("DanhMuc")
                     .get()
                     .addOnCompleteListener(task -> {
@@ -418,14 +428,27 @@
         }
 
         /** Xóa danh mục */
-        public void deleteDanhMuc(String id, FirestoreCallback<Void> callback) {
-            db.collection("DanhMuc").document(id)
+        public void deleteCategory(String categoryId, final OnCategoryDeletedListener listener) {
+            if (categoryId == null || categoryId.isEmpty()) {
+                if (listener != null) {
+                    listener.onError("Category ID is null or empty");
+                }
+                return;
+            }
+
+            db.collection("DanhMuc").document(categoryId)
                     .delete()
                     .addOnSuccessListener(aVoid -> {
-                        if (callback != null) callback.onSuccess(null);
+                        Log.d(TAG, "Danh mục đã xóa thành công: " + categoryId);
+                        if (listener != null) {
+                            listener.onCategoryDeleted();
+                        }
                     })
                     .addOnFailureListener(e -> {
-                        if (callback != null) callback.onFailure(e);
+                        Log.e(TAG, "Lỗi xóa danh mục: " + e.getMessage());
+                        if (listener != null) {
+                            listener.onError(e.getMessage());
+                        }
                     });
         }
 
