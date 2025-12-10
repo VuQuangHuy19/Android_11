@@ -1,9 +1,18 @@
 package com.example.app6hu.Fragments;
 
+import static android.content.ContentValues.TAG;
+
+import static com.example.app6hu.utils.FormatUtils.safeCastToInt;
+
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +23,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.app6hu.Activities.EditTransactionActivity;
+import com.example.app6hu.Activities.FindTransctionActivity;
 import com.example.app6hu.Adapter.CalendarDayAdapter;
 import com.example.app6hu.Adapter.CalendarEntryAdapter;
 import com.example.app6hu.R;
@@ -24,6 +35,7 @@ import com.example.app6hu.utils.FormatUtils;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +47,7 @@ public class CalendarFragment extends Fragment {
     private static final String ARG_PARAM2 = "param2";
     private String mParam1;
     private String mParam2;
+
     private ProgressBar progressBar;
     private GridView gridCalendar;
     private Map<String, Map<String, DaySummary>> monthlyCache = new HashMap<>();
@@ -42,7 +55,7 @@ public class CalendarFragment extends Fragment {
     private List<Integer> dayList;
     private Calendar currentCalendar;
     private TextView tvMonthYear;
-    private ImageView btnPrevMonth, btnNextMonth, btnCalendarIcon;
+    private ImageView btnPrevMonth, btnNextMonth, btnCalendarIcon, btnsearch;
     private ListView lvTransactions;
     private TextView tvTotalIncome, tvTotalExpense, tvTotalBalance;
 
@@ -54,8 +67,20 @@ public class CalendarFragment extends Fragment {
     // Map lưu vị trí đầu tiên của mỗi ngày trong list
     private Map<Integer, Integer> dayPositionMap = new HashMap<>();
 
+    // Biến xử lý double click
+    private long lastListItemClickTime = 0;
+    private int lastListItemClickPosition = -1;
+    private int currentHighlightedPosition = -1;
+
+    // Biến lưu tổng tháng
+    private double monthlyTotalIncome = 0;
+    private double monthlyTotalExpense = 0;
+
     private long lastClickTime = 0;
     private int lastClickPosition = -1;
+
+    // Thêm biến để kiểm soát force reload
+    private boolean forceReload = false;
 
     public CalendarFragment() {
         // Required empty public constructor
@@ -90,6 +115,7 @@ public class CalendarFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_calendar, container, false);
         progressBar = v.findViewById(R.id.progressBar);
 
+        btnsearch = v.findViewById(R.id.btnSearch);
         gridCalendar = v.findViewById(R.id.gridCalendar);
         tvMonthYear = v.findViewById(R.id.tvMonthYear);
         btnPrevMonth = v.findViewById(R.id.btnPrevMonth);
@@ -113,11 +139,17 @@ public class CalendarFragment extends Fragment {
 
         btnPrevMonth.setOnClickListener(view -> {
             currentCalendar.add(Calendar.MONTH, -1);
+            // Xóa cache của tháng mới để force reload
+            String newCacheKey = currentCalendar.get(Calendar.YEAR) + "-" + (currentCalendar.get(Calendar.MONTH) + 1);
+            monthlyCache.remove(newCacheKey);
             updateCalendar();
         });
 
         btnNextMonth.setOnClickListener(view -> {
             currentCalendar.add(Calendar.MONTH, 1);
+            // Xóa cache của tháng mới để force reload
+            String newCacheKey = currentCalendar.get(Calendar.YEAR) + "-" + (currentCalendar.get(Calendar.MONTH) + 1);
+            monthlyCache.remove(newCacheKey);
             updateCalendar();
         });
 
@@ -136,12 +168,42 @@ public class CalendarFragment extends Fragment {
             lastClickPosition = position;
         });
 
+        // Xử lý click cho ListView (giao dịch)
+        lvTransactions.setOnItemClickListener((parent, view, position, id) -> {
+            long clickTime = System.currentTimeMillis();
+
+            // Kiểm tra double click (400ms)
+            if (lastListItemClickPosition == position && clickTime - lastListItemClickTime < 400) {
+                // Double click - mở EditTransaction
+                if (position < calendarEntries.size()) {
+                    Calendars selectedEntry = calendarEntries.get(position);
+                    openEditTransaction(selectedEntry);
+                }
+            } else {
+                // Single click - chỉ highlight
+                view.setBackgroundColor(Color.parseColor("#F0F8FF"));
+                view.postDelayed(() -> {
+                    view.setBackgroundColor(Color.TRANSPARENT);
+                }, 200);
+            }
+
+            lastListItemClickTime = clickTime;
+            lastListItemClickPosition = position;
+        });
+
+        btnsearch.setOnClickListener(view -> {
+            Intent intent = new Intent(requireContext(), FindTransctionActivity.class);
+            startActivity(intent);
+        });
+
         return v;
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // Khi quay lại Fragment, load lại dữ liệu tháng hiện tại
+        forceReload = true;
         updateCalendar();
     }
 
@@ -150,6 +212,7 @@ public class CalendarFragment extends Fragment {
                 (view, year, month, dayOfMonth) -> {
                     currentCalendar.set(Calendar.YEAR, year);
                     currentCalendar.set(Calendar.MONTH, month);
+                    forceReload = true; // BẬT force reload
                     updateCalendar();
                 },
                 currentCalendar.get(Calendar.YEAR),
@@ -164,60 +227,182 @@ public class CalendarFragment extends Fragment {
         if (dayPositionMap.containsKey(day)) {
             int position = dayPositionMap.get(day);
 
-            // Scroll đến vị trí của ngày
-            lvTransactions.smoothScrollToPosition(position);
+            // Kiểm tra xem item đã hiển thị chưa
+            int firstVisible = lvTransactions.getFirstVisiblePosition();
+            int lastVisible = lvTransactions.getLastVisiblePosition();
 
-            // Sau khi scroll xong, highlight item đầu tiên của ngày
-            lvTransactions.postDelayed(() -> {
-                // Tính toán vị trí thực tế trên màn hình
-                int firstVisible = lvTransactions.getFirstVisiblePosition();
-                int lastVisible = lvTransactions.getLastVisiblePosition();
+            if (position >= firstVisible && position <= lastVisible) {
+                // Item đã hiển thị, chỉ cần highlight
+                highlightDayItem(position);
+            } else {
+                // Item chưa hiển thị, scroll đến nó trước
+                smoothScrollToPositionExact(position);
 
-                if (position >= firstVisible && position <= lastVisible) {
-                    // Item đã hiển thị trên màn hình
-                    View view = lvTransactions.getChildAt(position - firstVisible);
-                    if (view != null) {
-                        // Highlight tạm thời
-                        view.setBackgroundColor(Color.parseColor("#E3F2FD"));
+                // Delay để đợi scroll hoàn thành rồi highlight
+                lvTransactions.postDelayed(() -> {
+                    highlightDayItem(position);
+                }, 350);
+            }
 
-                        // Xóa highlight sau 2 giây
-                        view.postDelayed(() -> {
-                            view.setBackgroundColor(Color.TRANSPARENT);
-                        }, 2000);
-                    }
-                }
-            }, 300); // Delay để đảm bảo scroll đã hoàn thành
+            // Hiển thị tổng ngày
+            showDaySummary(day);
 
-            // Tính và hiển thị tổng của ngày được chọn
-            calculateAndDisplayDayTotals(day);
-
-            Toast.makeText(requireContext(), "Đã chuyển đến ngày " + day, Toast.LENGTH_SHORT).show();
         } else {
             lvTransactions.smoothScrollToPosition(0);
-            Toast.makeText(requireContext(), "Ngày " + day + " không có giao dịch", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Ngày " + day + " không có giao dịch",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void updateSelectedDay(int selectedDay) {
-        // Có thể thêm logic highlight ngày được chọn ở đây
-        // Ví dụ: lưu lại ngày được chọn và cập nhật adapter
+    // Sửa phương thức này để không dùng trên ListView object
+
+
+    private void highlightDayItem(int position) {
+        // Reset tất cả highlight trước đó
+        resetAllHighlights();
+
+        // Tìm view tại vị trí này
+        int firstVisible = lvTransactions.getFirstVisiblePosition();
+        int lastVisible = lvTransactions.getLastVisiblePosition();
+
+        if (position >= firstVisible && position <= lastVisible) {
+            View view = lvTransactions.getChildAt(position - firstVisible);
+            if (view != null) {
+                // Highlight với animation
+                highlightViewWithAnimation(view);
+
+                // Lưu vị trí đang được highlight
+                saveHighlightedPosition(position);
+            }
+        }
     }
 
-    private void calculateAndDisplayDayTotals(int day) {
+    private void highlightViewWithAnimation(View view) {
+        // Sử dụng ValueAnimator để tạo hiệu ứng mượt mà
+        ValueAnimator animator = ValueAnimator.ofArgb(
+                Color.TRANSPARENT,
+                Color.parseColor("#E3F2FD")
+        );
+        animator.setDuration(300);
+        animator.addUpdateListener(animation -> {
+            view.setBackgroundColor((int) animation.getAnimatedValue());
+        });
+        animator.start();
+
+        // Tự động xóa highlight sau 3 giây
+        view.postDelayed(() -> {
+            if (view.getBackground() != null) {
+                ValueAnimator fadeOut = ValueAnimator.ofArgb(
+                        Color.parseColor("#E3F2FD"),
+                        Color.TRANSPARENT
+                );
+                fadeOut.setDuration(500);
+                fadeOut.addUpdateListener(animation -> {
+                    view.setBackgroundColor((int) animation.getAnimatedValue());
+                });
+                fadeOut.start();
+            }
+        }, 3000);
+    }
+
+    private void saveHighlightedPosition(int position) {
+        // Bạn có thể lưu position này nếu cần
+        currentHighlightedPosition = position;
+    }
+
+    private void resetAllHighlights() {
+        int firstVisible = lvTransactions.getFirstVisiblePosition();
+        int lastVisible = lvTransactions.getLastVisiblePosition();
+
+        for (int i = firstVisible; i <= lastVisible; i++) {
+            View view = lvTransactions.getChildAt(i - firstVisible);
+            if (view != null) {
+                view.setBackgroundColor(Color.TRANSPARENT);
+            }
+        }
+    }
+
+    private void smoothScrollToPositionExact(int position) {
+        // Đảm bảo ListView đã layout xong
+        lvTransactions.post(() -> {
+            // Scroll đến vị trí và đặt item ở đầu list
+            lvTransactions.setSelectionFromTop(position, lvTransactions.getPaddingTop());
+
+            // Nếu muốn có animation mượt mà
+            lvTransactions.postDelayed(() -> {
+                lvTransactions.smoothScrollToPosition(position);
+            }, 100);
+        });
+    }
+
+    private void showDaySummary(int day) {
         double dayIncome = 0;
         double dayExpense = 0;
 
-        for (Calendars entry : calendarEntries) {
-            if (entry.getDay() == day) {
-                if (entry.isExpense()) {
-                    dayExpense += entry.getAmount();
-                } else {
-                    dayIncome += entry.getAmount();
-                }
-            }
+        // Tính tổng nhanh từ dailySummary
+        String key = String.valueOf(day);
+        if (dailySummary.containsKey(key)) {
+            DaySummary summary = dailySummary.get(key);
+            dayIncome = summary.income;
+            dayExpense = summary.expense;
         }
 
-        displayDayTotals(dayIncome, dayExpense, day);
+        double dayBalance = dayIncome - dayExpense;
+        String daySummary = String.format(Locale.getDefault(),
+                "Ngày %d: Thu: %s, Chi: %s, Tổng: %s",
+                day,
+                FormatUtils.formatCurrency(dayIncome),
+                FormatUtils.formatCurrency(dayExpense),
+                FormatUtils.formatCurrency(dayBalance));
+
+        Toast.makeText(requireContext(), daySummary, Toast.LENGTH_SHORT).show();
+    }
+
+
+    // Mở EditTransactionActivity khi double click
+    // Mở EditTransactionActivity khi double click
+    private void openEditTransaction(Calendars calendarEntry) {
+        if (calendarEntry.getTransactionId() == 0) {
+            Toast.makeText(requireContext(), "Không thể chỉnh sửa giao dịch này", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Log.d(TAG, "=== Opening Edit Transaction ===");
+        Log.d(TAG, "Transaction ID: " + calendarEntry.getTransactionId());
+        Log.d(TAG, "Document ID: " + calendarEntry.getDocumentId());
+        Log.d(TAG, "Category: " + calendarEntry.getCategory());
+        Log.d(TAG, "Amount: " + calendarEntry.getAmount());
+
+        // DEBUG: Kiểm tra documentId có hợp lệ không
+        if (calendarEntry.getDocumentId() == null || calendarEntry.getDocumentId().isEmpty()) {
+            Log.e(TAG, "✗✗✗ ERROR: Calendars entry has NO documentId!");
+            Log.e(TAG, "DocumentId is null or empty!");
+        } else if (calendarEntry.getDocumentId().startsWith("temp_")) {
+            Log.w(TAG, "⚠️ WARNING: DocumentId is temporary: " + calendarEntry.getDocumentId());
+        }
+
+        Intent intent = new Intent(requireContext(), EditTransactionActivity.class);
+
+        // THÊM DEBUG VÀO MỖI putExtra
+        Log.d(TAG, "Putting Extra: transaction_document_id = " + calendarEntry.getDocumentId());
+        intent.putExtra("transaction_document_id", calendarEntry.getDocumentId());
+
+        Log.d(TAG, "Putting Extra: transaction_id = " + calendarEntry.getTransactionId());
+        intent.putExtra("transaction_id", calendarEntry.getTransactionId());
+
+        Log.d(TAG, "Putting Extra: transaction_type = " + (calendarEntry.isExpense() ? "EXPENSE" : "INCOME"));
+        intent.putExtra("transaction_type", calendarEntry.isExpense() ? "EXPENSE" : "INCOME");
+
+        intent.putExtra("transaction_amount", calendarEntry.getAmount());
+        intent.putExtra("transaction_category", calendarEntry.getCategory()); // Tên danh mục
+        intent.putExtra("transaction_category_id", ""); // THÊM CATEGORY ID NẾU CÓ
+        intent.putExtra("transaction_detail", calendarEntry.getDescription());
+        intent.putExtra("transaction_day", calendarEntry.getDay());
+
+        Log.d(TAG, "Starting EditTransactionActivity with documentId: " + calendarEntry.getDocumentId());
+        Log.d(TAG, "Starting EditTransactionActivity...");
+        Log.d(TAG, "Category to highlight: " + calendarEntry.getCategory());
+        startActivityForResult(intent, 100);
     }
 
     private void updateCalendar() {
@@ -232,21 +417,33 @@ public class CalendarFragment extends Fragment {
 
         loadTransactionsFromFirebase();
     }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        if (requestCode == 100 && resultCode == Activity.RESULT_OK) {
+            // Refresh data khi quay lại từ EditTransactionActivity
+            forceReload = true;
+            updateCalendar();
+        }
+    }
     private void loadTransactionsFromFirebase() {
         String cacheKey = currentCalendar.get(Calendar.YEAR) + "-" + (currentCalendar.get(Calendar.MONTH) + 1);
 
-        if (monthlyCache.containsKey(cacheKey)) {
+        if (!forceReload && monthlyCache.containsKey(cacheKey)) {
             dailySummary = monthlyCache.get(cacheKey);
             adapter.setDailySummary(dailySummary);
             adapter.notifyDataSetChanged();
             calculateAndDisplayMonthlyTotals();
+            loadCalendarEntriesFromCache(cacheKey);
             return;
         }
 
         progressBar.setVisibility(View.VISIBLE);
         calendarEntries.clear();
-        dayPositionMap.clear(); // Xóa map cũ
+        dayPositionMap.clear();
+        monthlyTotalIncome = 0;
+        monthlyTotalExpense = 0;
 
         int month = currentCalendar.get(Calendar.MONTH) + 1;
         int year = currentCalendar.get(Calendar.YEAR);
@@ -257,18 +454,35 @@ public class CalendarFragment extends Fragment {
             @Override
             public void onSuccess(List<Transaction> list) {
                 progressBar.setVisibility(View.GONE);
+                forceReload = false;
 
                 dailySummary.clear();
                 calendarEntries.clear();
                 dayPositionMap.clear();
-                double totalMonthIncome = 0;
-                double totalMonthExpense = 0;
+                monthlyTotalIncome = 0;
+                monthlyTotalExpense = 0;
 
                 Calendar cal = Calendar.getInstance();
                 Map<Integer, List<Transaction>> transactionsByDay = new HashMap<>();
 
                 // Nhóm transaction theo ngày
                 for (Transaction t : list) {
+                    // Debug từng transaction
+                    Log.d(TAG, "Processing Transaction: " +
+                            "ID=" + t.getId() +
+                            ", DocumentID=" + t.getDocumentId() +
+                            ", Category=" + t.getCategory());
+                    if (t.getDate() == null) {
+                        Log.w(TAG, "Transaction has null date, skipping or setting current date");
+                        continue; // Hoặc set t.setDate(new Date()) nếu muốn
+                    }
+
+                    // Validate date của transaction
+                    Date validDate = validateTransactionDate(t.getDate());
+                    if (!validDate.equals(t.getDate())) {
+                        t.setDate(validDate); // Cập nhật date hợp lệ
+                    }
+
                     cal.setTime(t.getDate());
                     int day = cal.get(Calendar.DAY_OF_MONTH);
 
@@ -283,10 +497,10 @@ public class CalendarFragment extends Fragment {
 
                     if (t.getType().equals("INCOME")) {
                         dailySummary.get(key).income += t.getAmount();
-                        totalMonthIncome += t.getAmount();
+                        monthlyTotalIncome += t.getAmount();
                     } else {
                         dailySummary.get(key).expense += t.getAmount();
-                        totalMonthExpense += t.getAmount();
+                        monthlyTotalExpense += t.getAmount();
                     }
                 }
 
@@ -308,21 +522,47 @@ public class CalendarFragment extends Fragment {
                     int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
                     String dayName = getDayName(dayOfWeek);
 
+                    // Format ngày hiển thị
+                    String formattedDay = String.format(Locale.getDefault(), "%s, %02d/%02d",
+                            dayName, day, month);
+
                     for (Transaction t : dayTransactions) {
                         Calendars calendarEntry = new Calendars();
                         calendarEntry.setDay(day);
-                        calendarEntry.setDayName(dayName + ", " + day + "/" + month);
+                        calendarEntry.setDayName(formattedDay);
                         calendarEntry.setExpense(t.getType().equals("EXPENSE"));
                         calendarEntry.setAmount(t.getAmount());
                         calendarEntry.setCategory(t.getCategory());
                         calendarEntry.setDescription(t.getDetail());
                         calendarEntry.setIconResId(getIconForCategory(t.getCategory()));
 
+                        // QUAN TRỌNG: Lưu transaction ID và date
+                        calendarEntry.setTransactionId(safeCastToInt(t.getId()));
+                        calendarEntry.setTransactionDate(t.getDate());
+
+                        // Lấy documentId từ Transaction (đã được set trong FirebasestoreManager)
+                        if (t.getDocumentId() != null && !t.getDocumentId().isEmpty()) {
+                            calendarEntry.setDocumentId(t.getDocumentId());
+                            Log.d(TAG, "✓ Set documentId: " + t.getDocumentId());
+                        } else {
+                            // Fallback nếu không có documentId
+
+                            calendarEntry.setDocumentId("temp_" + t.getId());
+                            Log.e(TAG, "✗ ERROR: Transaction has no documentId! ID=" + t.getId());
+                        }
+
                         calendarEntries.add(calendarEntry);
+
+                        // Debug log
+                        System.out.println("Added transaction: " + t.getCategory() +
+                                ", Amount: " + t.getAmount() +
+                                ", Document ID: " + calendarEntry.getDocumentId());
                     }
                 }
 
+                // Lưu vào cache
                 monthlyCache.put(cacheKey, new HashMap<>(dailySummary));
+
                 adapter.setDailySummary(dailySummary);
                 adapter.notifyDataSetChanged();
 
@@ -330,27 +570,44 @@ public class CalendarFragment extends Fragment {
                 entryAdapter.notifyDataSetChanged();
                 lvTransactions.setAdapter(entryAdapter);
 
-                displayMonthlyTotals(totalMonthIncome, totalMonthExpense);
+                displayMonthlyTotals(monthlyTotalIncome, monthlyTotalExpense);
+
+                // Hiển thị thông báo nếu không có dữ liệu
+                if (calendarEntries.isEmpty()) {
+                    Toast.makeText(requireContext(), "Tháng này không có giao dịch", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Đã tải " + calendarEntries.size() + " giao dịch",
+                            Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
             public void onFailure(Exception e) {
                 progressBar.setVisibility(View.GONE);
+                forceReload = false;
                 Toast.makeText(requireContext(), "Lỗi tải dữ liệu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 displayMonthlyTotals(0, 0);
             }
         });
     }
 
+    // Thêm phương thức để load calendar entries từ cache
+    private void loadCalendarEntriesFromCache(String cacheKey) {
+        // Nếu bạn muốn cache cả calendar entries, cần thêm logic ở đây
+        // Hiện tại chỉ reload từ Firebase
+        // Bạn có thể tạo thêm một cache riêng cho calendarEntries nếu cần
+    }
+
     private String getDayName(int dayOfWeek) {
         switch (dayOfWeek) {
             case Calendar.SUNDAY: return "CN";
-            case Calendar.MONDAY: return "T2";
-            case Calendar.TUESDAY: return "T3";
-            case Calendar.WEDNESDAY: return "T4";
-            case Calendar.THURSDAY: return "T5";
-            case Calendar.FRIDAY: return "T6";
-            case Calendar.SATURDAY: return "T7";
+            case Calendar.MONDAY: return "Thứ 2";
+            case Calendar.TUESDAY: return "Thứ 3";
+            case Calendar.WEDNESDAY: return "Thứ 4";
+            case Calendar.THURSDAY: return "Thứ 5";
+            case Calendar.FRIDAY: return "Thứ 6";
+            case Calendar.SATURDAY: return "Thứ 7";
             default: return "";
         }
     }
@@ -379,37 +636,19 @@ public class CalendarFragment extends Fragment {
     private void displayMonthlyTotals(double totalIncome, double totalExpense) {
         double totalBalance = totalIncome - totalExpense;
 
-        tvTotalIncome.setText("+" + FormatUtils.formatCurrency(totalIncome));
-        tvTotalExpense.setText("-" + FormatUtils.formatCurrency(totalExpense));
+        // LUÔN HIỂN THỊ TỔNG THÁNG (dùng FormatUtils)
+        tvTotalIncome.setText(FormatUtils.formatCurrencyWithSign(totalIncome));
+        tvTotalExpense.setText(FormatUtils.formatCurrencyWithSign(-totalExpense)); // Dấu âm
 
-        String balanceText = FormatUtils.formatCurrency(Math.abs(totalBalance));
+        String balanceText = FormatUtils.formatCurrencyWithSign(totalBalance);
+        tvTotalBalance.setText(balanceText);
+
+        // Đặt màu theo giá trị
         if (totalBalance > 0) {
-            tvTotalBalance.setText("+" + balanceText);
             tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_green_dark, null));
         } else if (totalBalance < 0) {
-            tvTotalBalance.setText("-" + balanceText);
             tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
         } else {
-            tvTotalBalance.setText(FormatUtils.formatCurrency(0));
-            tvTotalBalance.setTextColor(Color.BLACK);
-        }
-    }
-
-    private void displayDayTotals(double dayIncome, double dayExpense, int day) {
-        // Hiển thị tổng của ngày được click
-        tvTotalIncome.setText("+" + FormatUtils.formatCurrency(dayIncome));
-        tvTotalExpense.setText("-" + FormatUtils.formatCurrency(dayExpense));
-
-        double dayBalance = dayIncome - dayExpense;
-        String balanceText = FormatUtils.formatCurrency(Math.abs(dayBalance));
-        if (dayBalance > 0) {
-            tvTotalBalance.setText("+" + balanceText);
-            tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_green_dark, null));
-        } else if (dayBalance < 0) {
-            tvTotalBalance.setText("-" + balanceText);
-            tvTotalBalance.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
-        } else {
-            tvTotalBalance.setText(FormatUtils.formatCurrency(0));
             tvTotalBalance.setTextColor(Color.BLACK);
         }
     }
@@ -422,6 +661,9 @@ public class CalendarFragment extends Fragment {
             totalMonthIncome += summary.income;
             totalMonthExpense += summary.expense;
         }
+
+        monthlyTotalIncome = totalMonthIncome;
+        monthlyTotalExpense = totalMonthExpense;
 
         displayMonthlyTotals(totalMonthIncome, totalMonthExpense);
     }
@@ -458,5 +700,32 @@ public class CalendarFragment extends Fragment {
         }
 
         return days;
+    }
+    // Thêm method này vào CalendarFragment
+    private Date validateTransactionDate(Date date) {
+        if (date == null) {
+            return new Date(); // Trả về ngày hiện tại nếu null
+        }
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        int year = cal.get(Calendar.YEAR);
+
+        // Nếu năm < 1970 (không hợp lệ cho Firebase)
+        if (year < 1970) {
+            Log.w(TAG, "Invalid year in transaction date: " + year + ", using current date");
+            return new Date(); // Trả về ngày hiện tại
+        }
+
+        return date;
+    }
+
+    // Thêm TAG cho logging
+    private static final String TAG = "CalendarFragment";
+    // Thêm phương thức để clear cache khi cần
+    public void clearCache() {
+        monthlyCache.clear();
+        forceReload = true;
+        updateCalendar();
     }
 }

@@ -4,18 +4,20 @@ import java.io.Serializable;
 import java.util.Date;
 
 public class Transaction implements Serializable {
-    private int id;
-    private String type;      // INCOME hoặc EXPENSE
+    private long id;
+    private String documentId;
+    private String type;
     private double amount;
     private String category;
     private String detail;
     private Date date;
-    private String icon;      // emoji hoặc tên icon
+    private String icon;
+
 
     public Transaction() {
     }
 
-    public Transaction(int id, String type, double amount, String category, String detail, Date date, String icon) {
+    public Transaction(long id, String type, double amount, String category, String detail, Date date, String icon) {
         this.id = id;
         this.type = type;
         this.amount = amount;
@@ -24,12 +26,18 @@ public class Transaction implements Serializable {
         this.date = date;
         this.icon = icon;
     }
+    public String getDocumentId() {
+        return documentId;
+    }
 
-    public int getId() {
+    public void setDocumentId(String documentId) {
+        this.documentId = documentId;
+    }
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

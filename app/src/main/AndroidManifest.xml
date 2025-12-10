@@ -14,6 +14,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App6Hu">
         <activity
+            android:name=".Activities.EditTransactionActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+
+            android:exported="false" />
+        <activity
+            android:name=".Activities.FindTransctionActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activities.ThemMoiDanhMucActivity"
             android:exported="false" />
         <activity

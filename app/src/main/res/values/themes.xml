@@ -2,16 +2,17 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.App6Hu" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
         <item name="colorPrimary">#FFC94D</item>
         <item name="colorPrimaryVariant">#FFC94D</item>
         <item name="colorAccent">#FFC94D</item>
 
+        <!-- Thêm dòng sau để cung cấp theme cho MaterialDatePicker -->
+        <item name="materialCalendarTheme">@style/MaterialDatePickerTheme</item>
     </style>
 
     <style name="Theme.App6Hu" parent="Base.Theme.App6Hu" />
 
-    <style name="MaterialDatePickerTheme" parent="ThemeOverlay.Material3.MaterialCalendar">
+    <style name="MaterialDatePickerTheme" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
         <!-- Màu cho button -->
         <item name="materialButtonStyle">@style/DatePickerButtonStyle</item>
         <item name="buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>

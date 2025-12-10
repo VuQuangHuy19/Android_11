@@ -22,6 +22,8 @@
     import com.google.firebase.firestore.QuerySnapshot;
 
     import java.util.ArrayList;
+    import java.util.Calendar;
+    import java.util.Date;
     import java.util.HashMap;
     import java.util.List;
     import java.util.Map;
@@ -68,6 +70,9 @@
                             List<Transaction> list = new ArrayList<>();
                             for (QueryDocumentSnapshot doc : task.getResult()) {
                                 Transaction t = doc.toObject(Transaction.class);
+
+                                // LƯU DOCUMENT ID
+                                t.setDocumentId(doc.getId());
 
                                 // Convert Firestore Timestamp to Date nếu cần
                                 if (t.getDate() == null) {
@@ -185,27 +190,54 @@
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
                             List<Transaction> list = new ArrayList<>();
-                            java.util.Calendar cal = java.util.Calendar.getInstance();
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                Transaction t = doc.toObject(Transaction.class);
+                            Calendar cal = Calendar.getInstance();
 
-                                // Convert Firestore Timestamp to Date nếu cần
-                                if (t.getDate() == null) {
-                                    Object dateObj = doc.get(Constants.FIELD_DATE);
-                                    if (dateObj instanceof Timestamp) {
-                                        t.setDate(((Timestamp) dateObj).toDate());
-                                    } else if (dateObj instanceof com.google.firebase.Timestamp) {
-                                        t.setDate(((com.google.firebase.Timestamp) dateObj).toDate());
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                Transaction t = new Transaction(); // Tạo mới thay vì toObject()
+
+                                // LẤY TẤT CẢ FIELD THỦ CÔNG
+                                t.setDocumentId(doc.getId()); // QUAN TRỌNG: Document ID từ Firestore
+
+                                // Lấy các field khác
+                                if (doc.contains("id")) {
+                                    Object idObj = doc.get("id");
+                                    if (idObj instanceof Long) {
+                                        t.setId((Long) idObj);
+                                    } else if (idObj instanceof Integer) {
+                                        t.setId(((Integer) idObj).longValue());
+                                    } else if (idObj instanceof Double) {
+                                        t.setId(((Double) idObj).longValue());
                                     }
                                 }
 
-                                if (t.getDate() != null) {
-                                    cal.setTime(t.getDate());
-                                    int transMonth = cal.get(java.util.Calendar.MONTH) + 1;
-                                    int transYear = cal.get(java.util.Calendar.YEAR);
-                                    if (transMonth == month && transYear == year) {
-                                        list.add(t);
-                                    }
+                                t.setType(doc.getString(Constants.FIELD_TYPE));
+                                t.setAmount(doc.getDouble(Constants.FIELD_AMOUNT));
+                                t.setCategory(doc.getString(Constants.FIELD_CATEGORY));
+                                t.setDetail(doc.getString(Constants.FIELD_DETAIL));
+
+                                // Xử lý date
+                                Object dateObj = doc.get(Constants.FIELD_DATE);
+                                if (dateObj instanceof Timestamp) {
+                                    t.setDate(((Timestamp) dateObj).toDate());
+                                } else if (dateObj instanceof Date) {
+                                    t.setDate((Date) dateObj);
+                                } else {
+                                    t.setDate(new Date());
+                                }
+
+                                // Kiểm tra và thêm vào list nếu đúng tháng/năm
+                                cal.setTime(t.getDate());
+                                int transMonth = cal.get(Calendar.MONTH) + 1;
+                                int transYear = cal.get(Calendar.YEAR);
+
+                                Log.d(TAG, "Loaded Transaction: " +
+                                        "DocID=" + t.getDocumentId() +
+                                        ", ID=" + t.getId() +
+                                        ", Month=" + transMonth +
+                                        ", Year=" + transYear);
+
+                                if (transMonth == month && transYear == year) {
+                                    list.add(t);
                                 }
                             }
                             callback.onSuccess(list);
@@ -215,6 +247,45 @@
                     });
         }
 
+        //Tìm trans bằng id
+        public void findTransactionByField(String fieldName, Object value, FirestoreCallback<List<Transaction>> callback) {
+            db.collection(Constants.COLLECTION_TRANSACTIONS)
+                    .whereEqualTo(fieldName, value)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            List<Transaction> list = new ArrayList<>();
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                Transaction t = new Transaction();
+                                t.setDocumentId(doc.getId());
+
+                                if (doc.contains("id")) {
+                                    Object idObj = doc.get("id");
+                                    if (idObj instanceof Long) {
+                                        t.setId((Long) idObj);
+                                    }
+                                }
+
+                                t.setType(doc.getString(Constants.FIELD_TYPE));
+                                t.setAmount(doc.getDouble(Constants.FIELD_AMOUNT));
+                                t.setCategory(doc.getString(Constants.FIELD_CATEGORY));
+                                t.setDetail(doc.getString(Constants.FIELD_DETAIL));
+
+                                Object dateObj = doc.get(Constants.FIELD_DATE);
+                                if (dateObj instanceof Timestamp) {
+                                    t.setDate(((Timestamp) dateObj).toDate());
+                                } else if (dateObj instanceof Date) {
+                                    t.setDate((Date) dateObj);
+                                }
+
+                                list.add(t);
+                            }
+                            callback.onSuccess(list);
+                        } else {
+                            callback.onFailure(task.getException());
+                        }
+                    });
+        }
         // ========== DANH MỤC METHODS ==========
 
         /** Thêm danh mục */
@@ -236,62 +307,7 @@
                     });
         }
 
-        /** Lấy danh mục theo type */
-        /** Lấy danh mục theo type */
-    //    public void getDanhMucByType(String type, Context context, FirestoreCallback<List<DanhMuc>> callback) {
-    //        db.collection("DanhMuc")
-    //                .whereEqualTo("type", type)
-    //                .get()
-    //                .addOnCompleteListener(task -> {
-    //                    if (task.isSuccessful()) {
-    //                        List<DanhMuc> list = new ArrayList<>();
-    //
-    //                        for (QueryDocumentSnapshot doc : task.getResult()) {
-    //                            try {
-    //                                String name = doc.getString("itemName");
-    //                                String iconName = doc.getString("icon");
-    //                                String docType = doc.getString("type");
-    //
-    //                                Long colorLong = doc.getLong("color");
-    //                                int color = colorLong != null ? colorLong.intValue() : 0;
-    //
-    //                                // Chuyển iconName thành resource ID - SỬ DỤNG CONTEXT TRUYỀN VÀO
-    //                                int iconRes = R.drawable.ic_logo; // Mặc định
-    //                                if (iconName != null && !iconName.isEmpty() && context != null) {
-    //                                    try {
-    //                                        // Lấy resource ID từ tên
-    //                                        int resId = context.getResources()
-    //                                                .getIdentifier(iconName, "drawable",
-    //                                                        context.getPackageName());
-    //                                        if (resId != 0) {
-    //                                            iconRes = resId;
-    //                                        } else {
-    //                                            Log.w(TAG, "Icon not found: " + iconName +
-    //                                                    ", using default");
-    //                                        }
-    //                                    } catch (Exception e) {
-    //                                        Log.w(TAG, "Error getting icon: " + iconName);
-    //                                    }
-    //                                }
-    //
-    //                                // Tạo DanhMuc
-    //                                DanhMuc danhMuc = new DanhMuc(name, iconRes, DanhMuc.TYPE_CATEGORY, color);
-    //                                danhMuc.setType(docType);
-    //                                danhMuc.setId(doc.getId());
-    //                                danhMuc.setIconName(iconName);
-    //
-    //                                list.add(danhMuc);
-    //                            } catch (Exception e) {
-    //                                Log.e(TAG, "Error parsing document: " + e.getMessage());
-    //                            }
-    //                        }
-    //
-    //                        callback.onSuccess(list);
-    //                    } else {
-    //                        callback.onFailure(task.getException());
-    //                    }
-    //                });
-    //    }
+
         public void getDanhMucByType(String type, Context context, FirestoreCallback<List<DanhMuc>> callback) {
             Log.d("FirebasestoreManager", "=== getDanhMucByType START ===");
             Log.d("FirebasestoreManager", "getDanhMucByType called với type: " + type);
@@ -593,6 +609,33 @@
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Lỗi kiểm tra danh mục: " + e.getMessage());
+                        if (callback != null) callback.onFailure(e);
+                    });
+        }
+
+        //Cập nhật giao dịch từ FB
+        /** Cập nhật giao dịch */
+        public void updateTransaction(String transactionId, Transaction updatedTransaction, FirestoreCallback<Void> callback) {
+            if (transactionId == null || transactionId.isEmpty()) {
+                if (callback != null) callback.onFailure(new Exception("Transaction ID is null"));
+                return;
+            }
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put(Constants.FIELD_TYPE, updatedTransaction.getType());
+            updates.put(Constants.FIELD_AMOUNT, updatedTransaction.getAmount());
+            updates.put(Constants.FIELD_CATEGORY, updatedTransaction.getCategory());
+            updates.put(Constants.FIELD_DETAIL, updatedTransaction.getDetail());
+            updates.put(Constants.FIELD_DATE, updatedTransaction.getDate());
+
+            db.collection(Constants.COLLECTION_TRANSACTIONS).document(transactionId)
+                    .update(updates)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Cập nhật giao dịch thành công: " + transactionId);
+                        if (callback != null) callback.onSuccess(null);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Lỗi khi cập nhật giao dịch", e);
                         if (callback != null) callback.onFailure(e);
                     });
         }

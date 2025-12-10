@@ -1,15 +1,19 @@
 package com.example.app6hu.Adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.app6hu.Activities.EditTransactionActivity;
 import com.example.app6hu.R;
 import com.example.app6hu.model.Calendars;
+import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.FormatUtils;
 
 import java.util.List;
@@ -19,6 +23,8 @@ public class CalendarEntryAdapter extends BaseAdapter {
     private final Context context;
     private final List<Calendars> entries;
     private final LayoutInflater inflater;
+    private long lastClickTime = 0;
+    private int lastClickPosition = -1;
 
     public CalendarEntryAdapter(Context context, List<Calendars> entries) {
         this.context = context;
@@ -92,13 +98,33 @@ public class CalendarEntryAdapter extends BaseAdapter {
         holder.tvCategory.setText(entry.getCategory());
         holder.tvDescription.setText(entry.getDescription());
 
+        String formattedAmount = FormatUtils.formatCurrency(entry.getAmount());
         if (entry.isExpense()) {
-            holder.tvAmount.setText("-" + FormatUtils.formatCurrency(entry.getAmount()));
+            holder.tvAmount.setText("-" + formattedAmount);
             holder.tvAmount.setTextColor(context.getColor(R.color.red));
         } else {
-            holder.tvAmount.setText("+" + FormatUtils.formatCurrency(entry.getAmount()));
-            holder.tvAmount.setTextColor(context.getColor(R.color.teal_700));
+            holder.tvAmount.setText("+" + formattedAmount);
+            holder.tvAmount.setTextColor(context.getColor(android.R.color.holo_green_dark));
         }
+
+        convertView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                long clickTime = System.currentTimeMillis();
+
+                // Kiểm tra double click
+                if (lastClickPosition == position && clickTime - lastClickTime < 400) {
+                    // Double click - chuyển sang EditTransaction
+                    openEditTransaction(entry);
+                } else {
+                    // Single click - có thể thêm hiệu ứng hoặc xử lý khác
+                    Toast.makeText(context, "Click: " + entry.getDescription(), Toast.LENGTH_SHORT).show();
+                }
+
+                lastClickTime = clickTime;
+                lastClickPosition = position;
+            }
+        });
 
         return convertView;
     }
@@ -108,6 +134,40 @@ public class CalendarEntryAdapter extends BaseAdapter {
 
         Calendars previousEntry = entries.get(position - 1);
         return previousEntry.getDay() != currentDay;
+    }
+
+    private void openEditTransaction(Calendars calendarEntry) {
+        // Tạo Transaction object từ Calendars
+        Transaction transaction = new Transaction();
+        transaction.setType(calendarEntry.isExpense() ? "EXPENSE" : "INCOME");
+        transaction.setAmount(calendarEntry.getAmount());
+        transaction.setCategory(calendarEntry.getCategory());
+        transaction.setDetail(calendarEntry.getDescription());
+
+        // QUAN TRỌNG: Truyền thêm các thông tin cần thiết
+        Intent intent = new Intent(context, EditTransactionActivity.class);
+
+        // TRUYỀN ĐẦY ĐỦ THÔNG TIN NHƯ TRONG CalendarFragment
+        intent.putExtra("transaction_document_id", calendarEntry.getDocumentId());
+        intent.putExtra("transaction_id", calendarEntry.getTransactionId());
+        intent.putExtra("transaction_type", calendarEntry.isExpense() ? "EXPENSE" : "INCOME");
+        intent.putExtra("transaction_amount", calendarEntry.getAmount());
+        intent.putExtra("transaction_category", calendarEntry.getCategory());
+        intent.putExtra("transaction_detail", calendarEntry.getDescription());
+        intent.putExtra("transaction_day", calendarEntry.getDay());
+
+        // Thêm transaction_date nếu có
+        if (calendarEntry.getTransactionDate() != null) {
+            intent.putExtra("transaction_date", calendarEntry.getTransactionDate().getTime());
+        }
+
+        // Thêm thông tin tháng/năm hiện tại nếu cần
+        // (Có thể lấy từ Fragment hoặc truyền qua constructor)
+
+        context.startActivity(intent);
+
+        // Thông báo double click
+        Toast.makeText(context, "Double click: Edit transaction", Toast.LENGTH_SHORT).show();
     }
 
     static class ViewHolder {

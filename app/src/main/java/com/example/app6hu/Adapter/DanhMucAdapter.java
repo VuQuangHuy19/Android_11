@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.app6hu.R;
 import com.example.app6hu.model.DanhMuc;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -23,6 +24,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final OnDanhMucClickListener listener;
     private int selectedPosition = -1;
     private final Context context;
+    private String selectedCategoryName = "";
 
     public interface OnDanhMucClickListener {
         void onCategoryClick(DanhMuc item);
@@ -31,10 +33,13 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public DanhMucAdapter(Context context, List<DanhMuc> danhMucList, OnDanhMucClickListener listener) {
         this.context = context;
-        this.danhMucList = danhMucList;
+        this.danhMucList = danhMucList != null ? danhMucList : new ArrayList<>();
         this.listener = listener;
-    }
 
+        // THÊM LOG Ở ĐÂY
+        Log.d(TAG, "Adapter created with " + this.danhMucList.size() + " items");
+        Log.d(TAG, "Context type: " + context.getClass().getSimpleName());
+    }
     // Thêm method này để xóa selection
     public void clearSelection() {
         int prevPosition = selectedPosition;
@@ -121,14 +126,30 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+
+
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        Log.d("DanhMucAdapter", "onBindViewHolder position: " + position);
+        Log.d(TAG, "onBindViewHolder position: " + position);
         DanhMuc item = danhMucList.get(position);
 
         if (holder instanceof CategoryViewHolder) {
             CategoryViewHolder vh = (CategoryViewHolder) holder;
-            boolean isSelected = (selectedPosition == position);
+
+            // KIỂM TRA XEM CÓ PHẢI LÀ CATEGORY ĐƯỢC CHỌN KHÔNG
+            boolean isSelected = false;
+            if (selectedPosition != -1 && selectedPosition == position) {
+                isSelected = true;
+            } else if (selectedCategoryName != null && !selectedCategoryName.isEmpty() &&
+                    item.getViewType() == DanhMuc.TYPE_CATEGORY &&
+                    selectedCategoryName.equals(item.getItemName())) {
+                isSelected = true;
+                selectedPosition = position; // Cập nhật selectedPosition
+            }
+
+            Log.d(TAG, "Position " + position + " - " + item.getItemName() +
+                    " - isSelected: " + isSelected);
+
             vh.bind(context, item, isSelected);
 
             vh.itemView.setOnClickListener(v -> {
@@ -137,6 +158,7 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
                 int prev = selectedPosition;
                 selectedPosition = pos;
+                selectedCategoryName = item.getItemName();
 
                 if (prev != -1) notifyItemChanged(prev);
                 notifyItemChanged(pos);
@@ -154,13 +176,67 @@ public class DanhMucAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
+        Log.d(TAG, "getItemCount: " + danhMucList.size());
         return danhMucList.size();
+    }
+    // Thêm phương thức để set selection theo position
+    public void setSelectedPosition(int position) {
+        int prevPosition = selectedPosition;
+        selectedPosition = position;
+
+        if (prevPosition != -1) {
+            notifyItemChanged(prevPosition);
+        }
+        if (selectedPosition != -1 && selectedPosition < getItemCount()) {
+            notifyItemChanged(selectedPosition);
+        }
+    }
+
+    // THÊM PHƯƠNG THỨC ĐỂ SET SELECTED CATEGORY
+    public void setSelectedCategory(String categoryName) {
+        this.selectedCategoryName = categoryName != null ? categoryName : "";
+        this.selectedPosition = -1;
+
+        // Tìm vị trí của category
+        if (categoryName != null && !categoryName.isEmpty()) {
+            for (int i = 0; i < danhMucList.size(); i++) {
+                DanhMuc dm = danhMucList.get(i);
+                if (dm.getViewType() == DanhMuc.TYPE_CATEGORY &&
+                        categoryName.equals(dm.getItemName())) {
+                    this.selectedPosition = i;
+                    break;
+                }
+            }
+        }
+
+        notifyDataSetChanged(); // QUAN TRỌNG: Cập nhật UI
+        Log.d(TAG, "setSelectedCategory: " + categoryName + ", position: " + selectedPosition);
     }
 
     public void updateData(List<DanhMuc> newList) {
+        // Lưu lại category đang được chọn trước khi xóa
+        String currentSelected = selectedCategoryName;
+
         danhMucList.clear();
         danhMucList.addAll(newList);
+
+        // Reset selected position
         selectedPosition = -1;
+
+        // Tìm lại selected position nếu có
+        if (currentSelected != null && !currentSelected.isEmpty()) {
+            for (int i = 0; i < danhMucList.size(); i++) {
+                DanhMuc dm = danhMucList.get(i);
+                if (dm.getViewType() == DanhMuc.TYPE_CATEGORY &&
+                        currentSelected.equals(dm.getItemName())) {
+                    selectedPosition = i;
+                    break;
+                }
+            }
+        }
+
         notifyDataSetChanged();
+        Log.d(TAG, "updateData - selectedCategory: " + currentSelected +
+                ", selectedPosition: " + selectedPosition);
     }
 }

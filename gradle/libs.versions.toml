@@ -8,6 +8,7 @@ material = "1.13.0"
 activity = "1.12.1"
 constraintlayout = "2.2.1"
 googleGmsGoogleServices = "4.4.4"
+firebaseDatabase = "22.0.1"
 
 
 [libraries]
@@ -27,6 +28,7 @@ lifecycle-livedata = { group = "androidx.lifecycle", name = "lifecycle-livedata"
 
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version = "1.4.0" }
 mpandroidchart = { group = "com.github.PhilJay", name = "MPAndroidChart", version = "v3.1.0" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
 
 
 

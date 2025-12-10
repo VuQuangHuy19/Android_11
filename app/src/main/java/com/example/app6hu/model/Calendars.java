@@ -1,16 +1,24 @@
 package com.example.app6hu.model;
 
-public class Calendars {
+import java.util.Date;
 
+public class Calendars {
     private int day;           // ngày trong tháng
-    private String dayName; // "Thứ 2, 11/11"
+    private String documentId;
+    private String dayName;    // "Thứ 2, 11/11"
     private String category;   // Danh mục
     private String description;// chi tiết
-    private double amount;       // số tiền
+    private double amount;     // số tiền
     private boolean isExpense; // true = chi, false = thu
     private int iconResId;     // drawable icon
+    private long transactionId; // ID của transaction từ Firebase
+    private Date transactionDate; // Ngày giao dịch
 
-    public Calendars(int day, String category, String description, long amount, boolean isExpense, int iconResId) {
+    public Calendars() {
+    }
+
+    // Constructor đầy đủ
+    public Calendars(int day, String category, String description, double amount, boolean isExpense, int iconResId) {
         this.day = day;
         this.category = category;
         this.description = description;
@@ -18,11 +26,14 @@ public class Calendars {
         this.isExpense = isExpense;
         this.iconResId = iconResId;
     }
-    public Calendars() {
+    public String getDocumentId() {
+        return documentId;
     }
 
-    // Constructor đầy đủ
-
+    public void setDocumentId(String documentId) {
+        this.documentId = documentId;
+    }
+    // Getters and setters
     public int getDay() { return day; }
     public void setDay(int day) { this.day = day; }
 
@@ -43,5 +54,10 @@ public class Calendars {
 
     public int getIconResId() { return iconResId; }
     public void setIconResId(int iconResId) { this.iconResId = iconResId; }
-}
 
+    public long getTransactionId() { return transactionId; }
+    public void setTransactionId(long transactionId) { this.transactionId = transactionId; }
+
+    public Date getTransactionDate() { return transactionDate; }
+    public void setTransactionDate(Date transactionDate) { this.transactionDate = transactionDate; }
+}

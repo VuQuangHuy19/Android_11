@@ -1,6 +1,11 @@
 package com.example.app6hu.utils;
 
+import static android.content.ContentValues.TAG;
+
+import android.util.Log;
+
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -63,5 +68,22 @@ public class FormatUtils {
         }
         DecimalFormat formatter = new DecimalFormat(pattern);
         return formatter.format(number);
+    }
+    public static String formatCurrencyNoSymbol(double amount) {
+        try {
+            // Sử dụng Locale.US để có dấu phân cách là dấu chấm (.)
+            DecimalFormat formatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.US));
+            return formatter.format(amount);
+        } catch (Exception e) {
+            // Fallback nếu có lỗi
+            return String.format(Locale.US, "%.0f", amount);
+        }
+    }
+    public static int safeCastToInt(long id) {
+        if (id > Integer.MAX_VALUE) {
+            Log.w(TAG, "Transaction ID too large: " + id);
+            return (int) (id % Integer.MAX_VALUE); // hoặc return 0;
+        }
+        return (int) id;
     }
 }
