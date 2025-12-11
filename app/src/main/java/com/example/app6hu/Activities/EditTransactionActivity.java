@@ -112,10 +112,6 @@ public class EditTransactionActivity extends AppCompatActivity implements DanhMu
             transactionId = 0L;
             Log.w(TAG, "transaction_id is unknown type: " + (idObj != null ? idObj.getClass().getName() : "null"));
         }
-
-        // Hoặc đơn giản hơn: dùng getIntExtra rồi convert
-        // transactionId = (long) getIntent().getIntExtra("transaction_id", 0);
-
         // Đọc các field khác
         transactionType = getIntent().getStringExtra("transaction_type");
         transactionAmount = getIntent().getDoubleExtra("transaction_amount", 0);

@@ -3,6 +3,7 @@ package com.example.app6hu.model;
 
 
 public class ReportItem {
+    private String id;
     private String name;
     private long amount;
     private String color;

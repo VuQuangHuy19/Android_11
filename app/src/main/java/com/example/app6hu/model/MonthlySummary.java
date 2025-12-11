@@ -1,6 +1,7 @@
 package com.example.app6hu.model;
 
 public class MonthlySummary {
+    public  String id;
     public String month;
     public long amount;
 
