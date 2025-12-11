@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+    <EditText
+        android:id="@+id/edtTenHocPhi"
+        android:hint="Tên môn học"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/edtDonGiaTin"
+        android:hint="Giá 1 tín chỉ"
+        android:inputType="numberDecimal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/edtSoTinChi"
+        android:hint="Số tín chỉ"
+        android:inputType="number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <CheckBox
+        android:id="@+id/cbNoMon"
+        android:text="Nợ môn (tăng hệ số)"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/edtHeSo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nhập hệ số (VD: 1.5)"
+        android:inputType="numberDecimal"
+        android:visibility="gone" />
+
+    <EditText
+        android:id="@+id/edtNgayDong"
+        android:hint="Ngày đóng"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btnLuuHocPhi"
+        android:text="Lưu học phí"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

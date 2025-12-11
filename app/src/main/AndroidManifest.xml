@@ -3,6 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -23,6 +29,14 @@
             android:name=".Activities.FindTransctionActivity"
             android:exported="false" />
 
+        android:theme="@style/Theme.App6Hu">
+        <activity android:name=".Activities.WebViewHocPhiActivity"
+            android:exported="false" />
+        <activity android:name=".Activities.AddHocPhiActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activities.ChonTruongActivity"
+            android:exported="false" />
         <activity
             android:name=".Activities.ThemMoiDanhMucActivity"
             android:exported="false" />
@@ -39,6 +53,7 @@
         <activity
             android:name=".Activities.PredictionWebActivity"
             android:exported="false" />
+
 
         <activity
             android:name=".MainActivity"

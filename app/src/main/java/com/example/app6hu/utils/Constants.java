@@ -4,6 +4,7 @@ public class Constants {
     // Firestore collections
     public static final String COLLECTION_TRANSACTIONS = "transactions";
     public static final String COLLECTION_GOALS = "goals";
+    public static final String COLLECTION_HOC_PHI = "hoc_phi";
     public static final String COLLECTION_TUITION = "tuition";
     public static final String COLLECTION_STATISTICS = "statistics";
     public static final String COLLECTION_CATEGORIES = "categories";

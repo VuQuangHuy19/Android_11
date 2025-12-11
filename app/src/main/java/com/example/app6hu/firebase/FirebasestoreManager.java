@@ -1,7 +1,6 @@
-    package com.example.app6hu.firebase;
-
-    import android.content.Context;
-    import android.util.Log;
+package com.example.app6hu.firebase;
+import android.content.Context;
+import android.util.Log;
 
     import androidx.annotation.NonNull;
 

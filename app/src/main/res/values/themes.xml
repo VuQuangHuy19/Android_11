@@ -10,6 +10,11 @@
         <item name="materialCalendarTheme">@style/MaterialDatePickerTheme</item>
     </style>
 
+    <style name="Theme.SelectUniversity" parent="Theme.App6Hu">
+        <item name="colorPrimary">#FFA51F</item>
+        <item name="colorPrimaryDark">#FF8F00</item>
+    </style>
+
     <style name="Theme.App6Hu" parent="Base.Theme.App6Hu" />
 
     <style name="MaterialDatePickerTheme" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">

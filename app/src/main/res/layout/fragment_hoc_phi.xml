@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/trangChinh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFF7ED"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginBottom="10dp">
+
+        <Button
+            android:id="@+id/btnTrangSinhVien"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Trang sinh viên"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:backgroundTint="#FFA51F"
+            android:layout_marginEnd="6dp"/>
+
+        <Button
+            android:id="@+id/btnThemHocPhi"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Thêm học phí"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:backgroundTint="#FFA51F"
+            android:layout_marginStart="6dp"/>
+    </LinearLayout>
+    <EditText
+        android:id="@+id/find"
+        android:hint="Tim kiem mon hoc"
+        android:paddingLeft="20dp"
+        android:background="@drawable/edittext_border"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"/>
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerHocPhi"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+
+        android:layout_weight="1"
+        android:background="#FFFFFF"
+        android:padding="8dp" />
+
+    <TextView
+        android:id="@+id/tvTongTien"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tổng tiền cần đóng: 0 đ"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#FFA51F"
+        android:layout_marginTop="8dp"/>
+
+</LinearLayout>
