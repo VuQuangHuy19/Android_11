@@ -1,3 +1,5 @@
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.google.gms.google.services)
@@ -63,4 +65,17 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    // Firebase BOM (quản lý phiên bản)
+    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+
+// Firebase products (phiên bản quản lý bởi BOM)
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+
+// Google Sign-In (Play services)
+    implementation("com.google.android.gms:play-services-auth:21.4.0")
+
+    // HTTP client for API calls
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

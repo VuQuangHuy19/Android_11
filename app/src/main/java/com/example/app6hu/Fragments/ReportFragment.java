@@ -19,12 +19,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.app6hu.Activities.ReportDetail;
+import com.example.app6hu.Activities.PredictionWebActivity;
 import com.example.app6hu.Adapter.ReportItemAdapter;
 import com.example.app6hu.R;
+import com.example.app6hu.api.ExpensePredictionApi;
 import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.ReportItem;
 import com.example.app6hu.model.Transaction;
-import com.example.app6hu.utils.ExpenseForecastUtils;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -39,16 +40,17 @@ import java.util.List;
 public class ReportFragment extends Fragment {
 
     private TextView tvMonthYear, tvIncome, tvExpense, tvBalance, tabExpense, tabIncome;
-    private TextView tvForecastAmount, tvForecastTrend, tvForecastMessage, tvWarningMessage;
+    private TextView tvWarningMessage;
     private ImageView btnPrevMonth, btnNextMonth;
     private PieChart pieChart;
     private RecyclerView recyclerReport;
     private View cardWarning;
-    private Button btnTestData;
+    private Button btnTestData, btnOpenPredictionWeb;
     private boolean showingExpense = true;
     private int currentMonth, currentYear;
     private ReportItemAdapter adapter;
     private FirebasestoreManager firestoreManager;
+    private ExpensePredictionApi predictionApi;
 
     public ReportFragment() {
         // Required empty public constructor
@@ -62,11 +64,12 @@ public class ReportFragment extends Fragment {
 
         View v = inflater.inflate(R.layout.fragment_report, container, false);
         firestoreManager = new FirebasestoreManager();
+        predictionApi = new ExpensePredictionApi();
         initViews(v);
         initTime();
         setupListeners();
         updateUI();
-        loadForecast();
+        loadWarnings();
         return v;
     }
 
@@ -81,16 +84,16 @@ public class ReportFragment extends Fragment {
         recyclerReport = v.findViewById(R.id.recyclerDetails);
         tabExpense = v.findViewById(R.id.tabExpense);
         tabIncome = v.findViewById(R.id.tabIncome);
-        tvForecastAmount = v.findViewById(R.id.tvForecastAmount);
-        tvForecastTrend = v.findViewById(R.id.tvForecastTrend);
-        tvForecastMessage = v.findViewById(R.id.tvForecastMessage);
         cardWarning = v.findViewById(R.id.cardWarning);
         tvWarningMessage = v.findViewById(R.id.tvWarningMessage);
-        btnTestData = v.findViewById(R.id.btnTestData);
+        btnOpenPredictionWeb = v.findViewById(R.id.btnOpenPredictionWeb);
         
-        // Button test data (tạm thời để test)
-        if (btnTestData != null) {
-            btnTestData.setOnClickListener(v1 -> addTestData());
+        // Button mở web dự đoán
+        if (btnOpenPredictionWeb != null) {
+            btnOpenPredictionWeb.setOnClickListener(v1 -> {
+                Intent intent = new Intent(getContext(), PredictionWebActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
@@ -147,7 +150,8 @@ public class ReportFragment extends Fragment {
         updateTabColors();
         setupPieChart();
         setupRecycler();
-        checkExpenseWarning();
+        // Tải lại cảnh báo khi cập nhật UI
+        loadWarnings();
     }
 
     // --- Cập nhật màu tab (dùng ContextCompat.getColor để tránh deprecated) ---
@@ -227,64 +231,39 @@ public class ReportFragment extends Fragment {
         recyclerReport.setAdapter(adapter);
     }
 
-    // --- Dự báo chi tiêu ---
-    private void loadForecast() {
-        // Lấy dữ liệu giao dịch các tháng trước để dự báo
+    // --- Tải cảnh báo từ API ---
+    private void loadWarnings() {
+        if (cardWarning == null || tvWarningMessage == null) {
+            return;
+        }
+        
         firestoreManager.getAllTransactions(new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
             @Override
             public void onSuccess(List<Transaction> transactions) {
-                if (transactions != null && !transactions.isEmpty()) {
-                    // Lọc chỉ lấy giao dịch có date và type hợp lệ
-                    List<Transaction> validTransactions = new ArrayList<>();
-                    for (Transaction t : transactions) {
-                        if (t != null && t.getDate() != null && t.getType() != null) {
-                            validTransactions.add(t);
+                if (transactions == null || transactions.isEmpty()) {
+                    cardWarning.setVisibility(View.GONE);
+                    return;
+                }
+                
+                predictionApi.getPrediction(transactions, new ExpensePredictionApi.PredictionCallback() {
+                    @Override
+                    public void onSuccess(ExpensePredictionApi.PredictionResult result) {
+                        if (result != null && result.warnings != null && !result.warnings.isEmpty()) {
+                            // Hiển thị cảnh báo đầu tiên
+                            String warningText = "⚠️ " + result.warnings.get(0).message;
+                            tvWarningMessage.setText(warningText);
+                            cardWarning.setVisibility(View.VISIBLE);
+                        } else {
+                            cardWarning.setVisibility(View.GONE);
                         }
                     }
-                    
-                    if (!validTransactions.isEmpty()) {
-                        ExpenseForecastUtils.ForecastResult forecast = ExpenseForecastUtils.forecastNextMonth(validTransactions);
-                        String trend = ExpenseForecastUtils.calculateTrend(validTransactions);
-                        
-                        DecimalFormat df = new DecimalFormat("#,###");
-                        tvForecastAmount.setText("Dự báo: " + df.format(forecast.getForecastAmount()) + "đ");
-                        tvForecastTrend.setText("Xu hướng: " + trend);
-                        tvForecastMessage.setText(forecast.getMessage());
-                    } else {
-                        tvForecastAmount.setText("Dự báo: Chưa có dữ liệu hợp lệ");
-                        tvForecastTrend.setText("Xu hướng: Không đủ dữ liệu");
-                        tvForecastMessage.setText("Các giao dịch cần có ngày và loại để dự báo");
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        // Ẩn cảnh báo nếu không tải được
+                        cardWarning.setVisibility(View.GONE);
                     }
-                } else {
-                    tvForecastAmount.setText("Dự báo: Chưa có dữ liệu");
-                    tvForecastTrend.setText("Xu hướng: Không đủ dữ liệu");
-                    tvForecastMessage.setText("Vui lòng thêm giao dịch để có dự báo chính xác");
-                }
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                tvForecastAmount.setText("Dự báo: Lỗi tải dữ liệu");
-                tvForecastTrend.setText("Xu hướng: Không xác định");
-                tvForecastMessage.setText("Không thể tải dữ liệu để dự báo: " + (e != null ? e.getMessage() : "Unknown error"));
-            }
-        });
-    }
-
-    // --- Kiểm tra cảnh báo chi tiêu ---
-    private void checkExpenseWarning() {
-        firestoreManager.getAllTransactions(new FirebasestoreManager.FirestoreCallback<List<Transaction>>() {
-            @Override
-            public void onSuccess(List<Transaction> transactions) {
-                ExpenseForecastUtils.WarningResult warning = ExpenseForecastUtils.checkExpenseWarning(
-                        transactions, currentMonth, currentYear);
-                
-                if (warning.isOverLimit()) {
-                    cardWarning.setVisibility(View.VISIBLE);
-                    tvWarningMessage.setText(warning.getMessage());
-                } else {
-                    cardWarning.setVisibility(View.GONE);
-                }
+                });
             }
 
             @Override
@@ -294,95 +273,4 @@ public class ReportFragment extends Fragment {
         });
     }
 
-    // --- Thêm dữ liệu test để kiểm tra dự báo và cảnh báo ---
-    private void addTestData() {
-        Calendar cal = Calendar.getInstance();
-        int totalCount = 0;
-
-        // ===== TEST CẢNH BÁO =====
-        // Tạo dữ liệu cho các tháng trước với số tiền THẤP (trung bình ~3-4 triệu/tháng)
-        // Tháng 2 tháng trước
-        cal = Calendar.getInstance();
-        cal.add(Calendar.MONTH, -2);
-        for (int i = 1; i <= 8; i++) {
-            cal.set(Calendar.DAY_OF_MONTH, i * 3);
-            Transaction t = new Transaction();
-            t.setType("EXPENSE");
-            t.setAmount(300000 + i * 50000); // 350k, 400k, 450k, ..., 700k
-            t.setCategory("Ăn uống");
-            t.setDetail("Chi tiêu tháng " + (cal.get(Calendar.MONTH) + 1) + " - " + i);
-            t.setDate(new Date(cal.getTimeInMillis()));
-            t.setIcon("🍔");
-            firestoreManager.addTransaction(t);
-            totalCount++;
-        }
-
-        // Tháng 1 tháng trước
-        cal = Calendar.getInstance();
-        cal.add(Calendar.MONTH, -1);
-        for (int i = 1; i <= 10; i++) {
-            cal.set(Calendar.DAY_OF_MONTH, i * 2);
-            Transaction t = new Transaction();
-            t.setType("EXPENSE");
-            t.setAmount(400000 + i * 40000); // 440k, 480k, 520k, ..., 800k
-            t.setCategory("Đi lại");
-            t.setDetail("Chi tiêu tháng " + (cal.get(Calendar.MONTH) + 1) + " - " + i);
-            t.setDate(new Date(cal.getTimeInMillis()));
-            t.setIcon("🚗");
-            firestoreManager.addTransaction(t);
-            totalCount++;
-        }
-
-        // ===== TẠO DỮ LIỆU THÁNG HIỆN TẠI VỚI SỐ TIỀN CAO (để trigger cảnh báo) =====
-        // Tổng tháng trước: ~3.5-4 triệu
-        // Tạo tháng này với tổng ~6-7 triệu (vượt quá 50-70%)
-        cal = Calendar.getInstance();
-        int daysPassed = cal.get(Calendar.DAY_OF_MONTH);
-        
-        // Tạo nhiều giao dịch để tổng tiền cao hơn trung bình
-        for (int i = 1; i <= Math.min(daysPassed, 10); i++) {
-            cal.set(Calendar.DAY_OF_MONTH, i * 2);
-            Transaction t = new Transaction();
-            t.setType("EXPENSE");
-            t.setAmount(500000 + i * 100000); // 600k, 700k, 800k, ..., 1.5tr
-            t.setCategory("Giải trí");
-            t.setDetail("Chi tiêu tháng này (test cảnh báo) " + i);
-            t.setDate(new Date(cal.getTimeInMillis()));
-            t.setIcon("🎮");
-            firestoreManager.addTransaction(t);
-            totalCount++;
-        }
-
-        // Thêm vài giao dịch lớn nữa để đảm bảo vượt quá
-        cal = Calendar.getInstance();
-        for (int i = 1; i <= 3; i++) {
-            cal.set(Calendar.DAY_OF_MONTH, i * 5);
-            Transaction t = new Transaction();
-            t.setType("EXPENSE");
-            t.setAmount(1500000 + i * 200000); // 1.7tr, 1.9tr, 2.1tr
-            t.setCategory("Mua sắm");
-            t.setDetail("Chi tiêu lớn tháng này " + i);
-            t.setDate(new Date(cal.getTimeInMillis()));
-            t.setIcon("🛍️");
-            firestoreManager.addTransaction(t);
-            totalCount++;
-        }
-
-        Toast.makeText(getContext(), 
-                "✅ Đã thêm " + totalCount + " giao dịch test!\n\n" +
-                "📊 Dữ liệu test:\n" +
-                "• Tháng trước: ~3-4 triệu\n" +
-                "• Tháng này: ~6-7 triệu\n" +
-                "• ⚠️ Cảnh báo sẽ hiển thị!\n\n" +
-                "Vui lòng chờ 3 giây để dữ liệu được lưu...", 
-                Toast.LENGTH_LONG).show();
-
-        // Tự động refresh sau 3 giây (để Firestore kịp lưu)
-        new android.os.Handler().postDelayed(() -> {
-            loadForecast();
-            checkExpenseWarning();
-            Toast.makeText(getContext(), "🔄 Đã refresh dữ liệu! Kiểm tra phần cảnh báo phía trên.", 
-                    Toast.LENGTH_SHORT).show();
-        }, 3000);
-    }
 }
