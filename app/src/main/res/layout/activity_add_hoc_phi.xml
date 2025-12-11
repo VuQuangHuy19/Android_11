@@ -31,6 +31,14 @@
         android:layout_height="wrap_content"/>
 
     <EditText
+        android:id="@+id/edtHeSo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nhập hệ số (VD: 1.5)"
+        android:inputType="numberDecimal"
+        android:visibility="gone" />
+
+    <EditText
         android:id="@+id/edtNgayDong"
         android:hint="Ngày đóng"
         android:layout_width="match_parent"

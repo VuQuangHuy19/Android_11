@@ -1,18 +1,22 @@
 package com.example.app6hu.Activities;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.app6hu.R;
-import com.example.app6hu.firebase.RealtimeDatabaseManager;
+import com.example.app6hu.firebase.FirebasestoreManager;
+import com.example.app6hu.firebase.FirestoreHocPhiManager;
 import com.example.app6hu.model.HocPhi;
 
 import java.util.UUID;
 
 public class AddHocPhiActivity extends AppCompatActivity {
 
+    FirestoreHocPhiManager manager = new FirestoreHocPhiManager();
     EditText edtTenHocPhi, edtDonGiaTin, edtSoTinChi, edtNgayDong;
+    EditText edtHeSo;
     CheckBox cbNoMon;
     Button btnLuu;
 
@@ -21,11 +25,21 @@ public class AddHocPhiActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_hoc_phi);
 
+        edtHeSo = findViewById(R.id.edtHeSo);
         edtTenHocPhi = findViewById(R.id.edtTenHocPhi);
         edtDonGiaTin = findViewById(R.id.edtDonGiaTin);
         edtSoTinChi = findViewById(R.id.edtSoTinChi);
         edtNgayDong = findViewById(R.id.edtNgayDong);
         cbNoMon = findViewById(R.id.cbNoMon);
+        cbNoMon.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                edtHeSo.setVisibility(View.VISIBLE);
+                edtHeSo.setHint("1.5"); // gợi ý mặc định
+            } else {
+                edtHeSo.setVisibility(View.GONE);
+                edtHeSo.setText("");
+            }
+        });
         btnLuu = findViewById(R.id.btnLuuHocPhi);
 
         btnLuu.setOnClickListener(v -> saveHocPhi());
@@ -45,12 +59,23 @@ public class AddHocPhiActivity extends AppCompatActivity {
 
         long donGia = Long.parseLong(donGiaStr);
         int soTin = Integer.parseInt(soTinStr);
+        double heSo;
 
-        // ✅ HỆ SỐ NỢ MÔN
-        double heSo = noMon ? 1.5 : 1.0;
+        if (cbNoMon.isChecked()) {
+            String heSoStr = edtHeSo.getText().toString().trim();
 
-        // ✅ TÍNH TIỀN
+            if (heSoStr.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập hệ số nợ môn!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            heSo = Double.parseDouble(heSoStr);
+        } else {
+            heSo = 1.0;
+        }
+
         long soTien = (long) (donGia * soTin * heSo);
+
 
         String id = UUID.randomUUID().toString();
 
@@ -65,10 +90,9 @@ public class AddHocPhiActivity extends AppCompatActivity {
                 "CHUA_DONG"
         );
 
-        RealtimeDatabaseManager.db()
-                .child("hoc_phi")
-                .child(id)
-                .setValue(hocPhi)
+        manager.collection("hoc_phi")
+                .document(id)  // id tự tạo của bạn
+                .set(hocPhi)
                 .addOnSuccessListener(unused -> {
                     Toast.makeText(this, "✅ Đã thêm học phí: " + soTien + " đ", Toast.LENGTH_LONG).show();
                     finish();

@@ -7,6 +7,8 @@ import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.Constants;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -28,7 +30,6 @@ public class FirebasestoreManager {private static final String TAG = "FirestoreM
                         Log.e(TAG, "Lỗi khi thêm giao dịch", e));
     }
 
-    /** Lấy toàn bộ giao dịch */
     public void getAllTransactions(final FirestoreCallback<List<Transaction>> callback) {
         db.collection(Constants.COLLECTION_TRANSACTIONS)
                 .get()
@@ -59,4 +60,5 @@ public class FirebasestoreManager {private static final String TAG = "FirestoreM
         void onSuccess(T data);
         void onFailure(Exception e);
     }
+
 }

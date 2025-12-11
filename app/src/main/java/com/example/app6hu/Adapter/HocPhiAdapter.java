@@ -19,6 +19,7 @@ import com.example.app6hu.utils.MoneyUtils;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class HocPhiAdapter extends RecyclerView.Adapter<HocPhiAdapter.ViewHolder> {
 
@@ -29,6 +30,11 @@ public class HocPhiAdapter extends RecyclerView.Adapter<HocPhiAdapter.ViewHolder
         this.context = context;
         this.list = list;
     }
+    public void upDateList(ArrayList<HocPhi> newList){
+        this.list= newList;
+        notifyDataSetChanged();
+    }
+
 
     @NonNull
     @Override

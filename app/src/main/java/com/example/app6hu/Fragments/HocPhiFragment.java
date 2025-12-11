@@ -3,10 +3,14 @@ package com.example.app6hu.Fragments;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -18,7 +22,7 @@ import com.example.app6hu.Activities.AddHocPhiActivity;
 import com.example.app6hu.Activities.ChonTruongActivity;
 import com.example.app6hu.Adapter.HocPhiAdapter;
 import com.example.app6hu.R;
-import com.example.app6hu.firebase.RealtimeDatabaseManager;
+import com.example.app6hu.firebase.FirestoreHocPhiManager;
 import com.example.app6hu.model.HocPhi;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -29,10 +33,11 @@ import java.util.ArrayList;
 
 public class HocPhiFragment extends Fragment {
 
+    private EditText find;
     private RecyclerView recyclerView;
     private HocPhiAdapter adapter;
     private ArrayList<HocPhi> list = new ArrayList<>();
-
+    private LinearLayout root;
     private Button btnTrangSinhVien, btnThemHocPhi;
     private TextView tvTongTien;
 
@@ -46,10 +51,10 @@ public class HocPhiFragment extends Fragment {
         btnTrangSinhVien = view.findViewById(R.id.btnTrangSinhVien);
         btnThemHocPhi = view.findViewById(R.id.btnThemHocPhi);
         tvTongTien = view.findViewById(R.id.tvTongTien);
-
+        root=view.findViewById(R.id.trangChinh);
         adapter = new HocPhiAdapter(getContext(), list);
         recyclerView.setAdapter(adapter);
-
+        find = view.findViewById(R.id.find);
         btnTrangSinhVien.setOnClickListener(v -> {
             startActivity(new Intent(getActivity(), ChonTruongActivity.class));
         });
@@ -58,40 +63,51 @@ public class HocPhiFragment extends Fragment {
             Intent intent = new Intent(getActivity(), AddHocPhiActivity.class);
             startActivity(intent);
         });
-
+        root.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                find.clearFocus();
+            }
+        });
         loadHocPhi();
+
+        find.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filter(s.toString());
+            }
+        });
 
         return view;
     }
 
-    private void loadHocPhi() {
-        DatabaseReference ref = RealtimeDatabaseManager.db()
-                .child("hoc_phi");
-
-        ref.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                list.clear();
-                double tongTien = 0;
-
-                for (DataSnapshot s : snapshot.getChildren()) {
-                    HocPhi hp = s.getValue(HocPhi.class);
-                    if (hp != null) {
-                        hp.setId(s.getKey()); // ✅ DÒNG QUAN TRỌNG
-                        list.add(hp);
-
-                        if (!"DA_DONG".equals(hp.getTrangThai())) {
-                            tongTien += hp.getSoTien();
-                        }
-                    }
-                }
-
-                adapter.notifyDataSetChanged();
-                tvTongTien.setText("Tổng tiền cần đóng: " + tongTien + " đ");
+    private void filter(String keyword){
+        ArrayList<HocPhi> newList= new ArrayList<>();
+        for(HocPhi i:list){
+            if(i.getTenHocPhi().toLowerCase().contains(keyword.toLowerCase())){
+                newList.add(i);
             }
+        }
+        adapter.upDateList(newList);
+    }
+    private void loadHocPhi() {
+        new FirestoreHocPhiManager().listenAll((data, tongTien) -> {
+            list.clear();
+            list.addAll(data);
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            adapter.notifyDataSetChanged();
+            tvTongTien.setText("Tổng tiền cần đóng: " + tongTien + " đ");
         });
     }
+
 }
