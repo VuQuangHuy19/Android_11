@@ -5,15 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="20dp"
+    android:background="#F8F9FA"
     tools:context=".Activities.SuaDanhMucActivity">
 
-    <!-- HEADER GIỮ NGUYÊN -->
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp">
 
         <ImageView
             android:id="@+id/btnBack"
@@ -25,9 +27,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Chỉnh sửa"
             android:gravity="center"
-            android:textSize="18sp"
+            android:text="Chỉnh sửa danh mục"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <ImageView
@@ -37,90 +39,69 @@
             android:src="@drawable/ic_delete" />
     </LinearLayout>
 
-
-    <!-- NGÀY -->
+    <!-- Tên danh mục -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ngày"
-        android:layout_marginTop="16dp"
-        android:textSize="14sp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <EditText
-            android:id="@+id/edtNgay"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:hint="Chọn ngày"
-            android:focusable="false" />
-
-        <ImageView
-            android:id="@+id/btnChonNgay"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_calendar"
-            android:padding="4dp" />
-    </LinearLayout>
-
-
-    <!-- GHI CHÚ -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ghi chú"
-        android:layout_marginTop="16dp"
-        android:textSize="14sp" />
+        android:text="Tên danh mục"
+        android:layout_marginTop="24dp"
+        android:textSize="16sp"
+        android:textColor="#424242"
+        android:textStyle="bold" />
 
     <EditText
-        android:id="@+id/edtGhiChu"
+        android:id="@+id/edtTenDanhMuc"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:hint="Nhập ghi chú" />
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:hint="Nhập tên danh mục"
+        android:padding="12dp"
+        android:background="@drawable/bg_edittext"
+        android:textSize="16sp" />
 
-
-    <!-- TIỀN CHI -->
+    <!-- Biểu tượng -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tiền chi"
-        android:layout_marginTop="16dp"
-        android:textSize="14sp" />
-
-    <EditText
-        android:id="@+id/edtTienChi"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:inputType="number"
-        android:hint="Nhập số tiền" />
-
-
-    <!-- DANH MỤC -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Danh mục"
-        android:layout_marginTop="16dp"
-        android:textSize="14sp" />
+        android:layout_marginTop="24dp"
+        android:text="Biểu tượng"
+        android:textSize="16sp"
+        android:textColor="#424242"
+        android:textStyle="bold" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rcvDanhMuc"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:paddingTop="8dp" />
-
-
-    <!-- NÚT OK -->
-    <Button
-        android:id="@+id/btnOK"
+        android:id="@+id/rcvIcons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="OK"
-        android:layout_marginTop="24dp" />
+        android:layout_marginTop="12dp"
+        android:paddingHorizontal="8dp"
+        android:clipToPadding="false" />
+
+    <!-- Màu sắc -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Màu sắc"
+        android:textSize="16sp"
+        android:textColor="#424242"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcvColors"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:paddingHorizontal="8dp"
+        android:clipToPadding="false" />
+
+    <!-- Nút cập nhật -->
+    <Button
+        android:id="@+id/btnUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:text="Cập nhật"
+        android:textSize="18sp" />
 
 </LinearLayout>

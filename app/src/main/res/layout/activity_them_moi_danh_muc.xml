@@ -2,9 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/themmoidanhmuc"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/themmoidanhmuc"
     android:orientation="vertical"
     android:padding="16dp"
     tools:context=".Activities.SuaDanhMucActivity">
@@ -13,8 +13,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <ImageView
             android:id="@+id/btnBack"
@@ -30,7 +30,6 @@
             android:text="Thêm mới danh mục"
             android:textSize="20sp"
             android:textStyle="bold" />
-
 
 
     </LinearLayout>

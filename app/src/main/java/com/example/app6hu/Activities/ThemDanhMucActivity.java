@@ -72,12 +72,17 @@ public class ThemDanhMucActivity extends AppCompatActivity {
             @Override
             public void onItemClick(DanhMuc item, int position) {
                 // Nhấn vào danh mục → mở sửa danh mục
+                // Trong onItemClick của adapter
                 Intent intent = new Intent(ThemDanhMucActivity.this, SuaDanhMucActivity.class);
                 intent.putExtra("danhMucId", item.getId());
                 intent.putExtra("danhMucName", item.getItemName());
                 intent.putExtra("danhMucType", item.getType());
                 intent.putExtra("iconName", item.getIconName());
-                intent.putExtra("color", item.getColor());
+
+// CHUYỂN ĐỔI MÀU TỪ INT SANG HEX STRING
+                String colorHex = String.format("#%06X", (0xFFFFFF & item.getColor()));
+                intent.putExtra("color", colorHex);
+
                 startActivity(intent);
             }
         });

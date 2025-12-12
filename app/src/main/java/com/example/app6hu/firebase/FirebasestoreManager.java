@@ -1,5 +1,6 @@
 package com.example.app6hu.firebase;
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 
     import androidx.annotation.NonNull;
@@ -16,7 +17,8 @@ import android.util.Log;
     import com.google.firebase.firestore.CollectionReference;
     import com.google.firebase.firestore.DocumentReference;
     import com.google.firebase.firestore.DocumentSnapshot;
-    import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
     import com.google.firebase.firestore.QueryDocumentSnapshot;
     import com.google.firebase.firestore.QuerySnapshot;
 
@@ -307,183 +309,9 @@ import android.util.Log;
         }
 
 
-        public void getDanhMucByType(String type, Context context, FirestoreCallback<List<DanhMuc>> callback) {
-            Log.d("FirebasestoreManager", "=== getDanhMucByType START ===");
-            Log.d("FirebasestoreManager", "getDanhMucByType called với type: " + type);
 
-            // SỬA TỪ "danhMuc" THÀNH "DanhMuc" (chữ D hoa)
-            db.collection("DanhMuc")  // <- SỬA DÒNG NÀY
-                    .whereEqualTo("type", type)
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            List<DanhMuc> danhMucList = new ArrayList<>();
-                            QuerySnapshot snapshot = task.getResult();
 
-                            Log.d("FirebasestoreManager", "Tìm thấy " + snapshot.size() + " documents");
 
-                            for (QueryDocumentSnapshot document : snapshot) {
-                                Log.d("FirebasestoreManager", "Document ID: " + document.getId());
-                                Log.d("FirebasestoreManager", "Data: " + document.getData());
-
-                                // THÊM: Parse thủ công vì Firestore có field "icon" chứ không phải "iconName"
-                                DanhMuc danhMuc = new DanhMuc();
-                                danhMuc.setItemName(document.getString("itemName"));
-                                danhMuc.setType(document.getString("type"));
-
-                                // Lấy tên icon từ field "icon" (trong Firestore)
-                                String iconName = document.getString("icon");
-                                danhMuc.setIconName(iconName);  // Lưu tên icon
-
-                                // Chuyển iconName thành resource ID
-                                if (iconName != null && context != null) {
-                                    try {
-                                        int resId = context.getResources().getIdentifier(
-                                                iconName,
-                                                "drawable",
-                                                context.getPackageName()
-                                        );
-                                        if (resId != 0) {
-                                            danhMuc.setResourcesID(resId);
-                                            Log.d("FirebasestoreManager", "Icon " + iconName + " -> res ID: " + resId);
-                                        } else {
-                                            Log.w("FirebasestoreManager", "Icon not found: " + iconName);
-                                            danhMuc.setResourcesID(R.drawable.ic_logo);
-                                        }
-                                    } catch (Exception e) {
-                                        Log.e("FirebasestoreManager", "Error converting icon", e);
-                                        danhMuc.setResourcesID(R.drawable.ic_logo);
-                                    }
-                                } else {
-                                    danhMuc.setResourcesID(R.drawable.ic_logo);
-                                }
-
-                                // Lấy các field khác
-                                Long colorLong = document.getLong("color");
-                                if (colorLong != null) {
-                                    danhMuc.setColor(colorLong.intValue());
-                                }
-
-                                Long viewTypeLong = document.getLong("viewType");
-                                if (viewTypeLong != null) {
-                                    danhMuc.setViewType(viewTypeLong.intValue());
-                                } else {
-                                    danhMuc.setViewType(DanhMuc.TYPE_CATEGORY);  // Mặc định
-                                }
-
-                                danhMuc.setId(document.getId());
-                                danhMucList.add(danhMuc);
-                            }
-
-                            Log.d("FirebasestoreManager", "Trả về " + danhMucList.size() + " items");
-                            callback.onSuccess(danhMucList);
-                        } else {
-                            Log.e("FirebasestoreManager", "Lỗi get documents: ", task.getException());
-                            callback.onFailure(task.getException());
-                        }
-                    });
-        }
-        public interface OnCategoriesLoadedListener {
-            void onCategoriesLoaded(List<DanhMuc> categories);
-            void onError(String error);
-        }
-
-        public interface OnCategoryDeletedListener {
-            void onCategoryDeleted();
-            void onError(String error);
-        }
-        /** Lấy tất cả danh mục (không phân type) */
-        public void getAllDanhMuc(Context context,FirestoreCallback<List<DanhMuc>> callback) {
-            Log.d(TAG, "getAllDanhMuc called với Context");
-            db.collection("DanhMuc")
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            List<DanhMuc> list = new ArrayList<>();
-
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                try {
-                                    String name = doc.getString("itemName");
-                                    String iconName = doc.getString("icon");
-                                    String docType = doc.getString("type");
-
-                                    Long colorLong = doc.getLong("color");
-                                    int color = colorLong != null ? colorLong.intValue() : 0;
-
-                                    // Chuyển iconName thành resource ID
-                                    int iconRes = R.drawable.ic_logo;
-                                    if (iconName != null && !iconName.isEmpty()) {
-                                        try {
-                                            int resId = context.getResources()
-                                                    .getIdentifier(iconName, "drawable", context.getPackageName());
-                                            if (resId != 0) {
-                                                iconRes = resId;
-                                            }
-                                        } catch (Exception e) {
-                                            Log.w(TAG, "Icon not found: " + iconName);
-                                        }
-                                    }
-
-                                    DanhMuc danhMuc = new DanhMuc(name, iconRes, DanhMuc.TYPE_CATEGORY, color);
-                                    danhMuc.setType(docType);
-                                    danhMuc.setId(doc.getId());
-                                    danhMuc.setIconName(iconName);
-
-                                    list.add(danhMuc);
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error parsing document: " + e.getMessage());
-                                }
-                            }
-
-                            callback.onSuccess(list);
-                        } else {
-                            callback.onFailure(task.getException());
-                        }
-                    });
-        }
-
-        /** Xóa danh mục */
-        public void deleteCategory(String categoryId, final OnCategoryDeletedListener listener) {
-            if (categoryId == null || categoryId.isEmpty()) {
-                if (listener != null) {
-                    listener.onError("Category ID is null or empty");
-                }
-                return;
-            }
-
-            db.collection("DanhMuc").document(categoryId)
-                    .delete()
-                    .addOnSuccessListener(aVoid -> {
-                        Log.d(TAG, "Danh mục đã xóa thành công: " + categoryId);
-                        if (listener != null) {
-                            listener.onCategoryDeleted();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "Lỗi xóa danh mục: " + e.getMessage());
-                        if (listener != null) {
-                            listener.onError(e.getMessage());
-                        }
-                    });
-        }
-
-        /** Cập nhật danh mục */
-        public void updateDanhMuc(String id, DanhMuc danhMuc, FirestoreCallback<Void> callback) {
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("itemName", danhMuc.getItemName());
-            updates.put("icon", danhMuc.getIconName() != null ? danhMuc.getIconName() : "ic_logo");
-            updates.put("type", danhMuc.getType());
-            updates.put("color", danhMuc.getColor());
-
-            db.collection("DanhMuc").document(id)
-                    .update(updates)
-                    .addOnSuccessListener(aVoid -> {
-                        if (callback != null) callback.onSuccess(null);
-                    })
-                    .addOnFailureListener(e -> {
-                        if (callback != null) callback.onFailure(e);
-                    });
-        }
 
         /** Tạo danh mục mẫu - PHIÊN BẢN MỚI VỚI KIỂM TRA KẾT NỐI */
         /** Tạo danh mục mẫu - PHIÊN BẢN MỚI VỚI KIỂM TRA KẾT NỐI */
@@ -643,4 +471,232 @@ import android.util.Log;
             void onSuccess(T data);
             void onFailure(Exception e);
         }
+
+        // Interface cho callback
+        public interface OnCategoryUpdatedListener {
+            void onCategoryUpdated();
+            void onError(String error);
+        }
+
+        public interface OnCategoryAddedListener {
+            void onCategoryAdded();
+            void onError(String error);
+        }
+
+        public interface OnCategoryDeletedListener {
+            void onCategoryDeleted();
+            void onError(String error);
+        }
+
+
+        // ========== DANH MỤC METHODS ==========
+
+        /** Lấy tất cả danh mục */
+        public void getAllDanhMuc(Context context, FirestoreCallback<List<DanhMuc>> callback) {
+            Log.d(TAG, "getAllDanhMuc called với Context");
+            db.collection("DanhMuc")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            List<DanhMuc> list = new ArrayList<>();
+
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                try {
+                                    DanhMuc danhMuc = parseDanhMucFromDocument(doc, context);
+                                    list.add(danhMuc);
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error parsing document: " + e.getMessage());
+                                }
+                            }
+
+                            callback.onSuccess(list);
+                        } else {
+                            callback.onFailure(task.getException());
+                        }
+                    });
+        }
+
+        /** Parse DanhMuc từ Firestore document */
+        private DanhMuc parseDanhMucFromDocument(DocumentSnapshot doc, Context context) {
+            String name = doc.getString("itemName");
+            String iconName = doc.getString("icon"); // Lưu ý: trong Firestore field là "icon", không phải "iconName"
+            String type = doc.getString("type");
+            String id = doc.getId();
+
+            // Lấy màu sắc
+            Long colorLong = doc.getLong("color");
+            int color = colorLong != null ? colorLong.intValue() : 0;
+
+            // Lấy viewType
+            Long viewTypeLong = doc.getLong("viewType");
+            int viewType = viewTypeLong != null ? viewTypeLong.intValue() : DanhMuc.TYPE_CATEGORY;
+
+            // Lấy resource ID từ icon name
+            int iconRes = R.drawable.ic_logo; // Mặc định
+            if (iconName != null && !iconName.isEmpty() && context != null) {
+                try {
+                    int resId = context.getResources()
+                            .getIdentifier(iconName, "drawable", context.getPackageName());
+                    if (resId != 0) {
+                        iconRes = resId;
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Icon not found: " + iconName);
+                }
+            }
+
+            // Tạo đối tượng DanhMuc
+            DanhMuc danhMuc = new DanhMuc(name, iconRes, viewType, color);
+            danhMuc.setType(type);
+            danhMuc.setId(id);
+            danhMuc.setIconName(iconName); // Lưu tên icon
+
+            return danhMuc;
+        }
+
+        /** Lấy danh mục theo type */
+        public void getDanhMucByType(String type, Context context, FirestoreCallback<List<DanhMuc>> callback) {
+            Log.d(TAG, "getDanhMucByType called với type: " + type);
+
+            db.collection("DanhMuc")
+                    .whereEqualTo("type", type)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            List<DanhMuc> danhMucList = new ArrayList<>();
+
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                try {
+                                    DanhMuc danhMuc = parseDanhMucFromDocument(doc, context);
+                                    danhMucList.add(danhMuc);
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error parsing document: " + e.getMessage());
+                                }
+                            }
+
+                            Log.d(TAG, "Trả về " + danhMucList.size() + " danh mục");
+                            callback.onSuccess(danhMucList);
+                        } else {
+                            Log.e(TAG, "Lỗi get documents: ", task.getException());
+                            callback.onFailure(task.getException());
+                        }
+                    });
+        }
+
+        /** Xóa danh mục */
+        public void deleteCategory(String categoryId, final OnCategoryDeletedListener listener) {
+            if (categoryId == null || categoryId.isEmpty()) {
+                if (listener != null) {
+                    listener.onError("Category ID is null or empty");
+                }
+                return;
+            }
+
+            db.collection("DanhMuc").document(categoryId)
+                    .delete()
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Danh mục đã xóa thành công: " + categoryId);
+                        if (listener != null) {
+                            listener.onCategoryDeleted();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Lỗi xóa danh mục: " + e.getMessage());
+                        if (listener != null) {
+                            listener.onError(e.getMessage());
+                        }
+                    });
+        }
+
+        /** Cập nhật danh mục */
+        public void updateCategory(String categoryId, String newName, String iconName, String colorHex, String type,
+                                   OnCategoryUpdatedListener listener) {
+            if (categoryId == null || categoryId.isEmpty()) {
+                listener.onError("ID danh mục không hợp lệ");
+                return;
+            }
+
+            // Chuyển đổi hex color sang int
+            int colorInt;
+            try {
+                colorInt = Color.parseColor(colorHex);
+            } catch (Exception e) {
+                colorInt = Color.BLACK; // Màu đen mặc định
+            }
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("itemName", newName);
+            updates.put("icon", iconName); // Lưu ý: field trong Firestore là "icon"
+            updates.put("type", type);
+            updates.put("color", colorInt);
+            updates.put("viewType", DanhMuc.TYPE_CATEGORY);
+
+            db.collection("DanhMuc").document(categoryId)
+                    .update(updates)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Danh mục đã cập nhật thành công: " + categoryId);
+                        listener.onCategoryUpdated();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Lỗi cập nhật danh mục: " + e.getMessage());
+                        listener.onError(e.getMessage());
+                    });
+        }
+
+        /** Thêm danh mục mới */
+        public void addCategory(String name, String iconName, String colorHex, String type,
+                                OnCategoryAddedListener listener) {
+            // Chuyển đổi hex color sang int
+            int colorInt;
+            try {
+                colorInt = Color.parseColor(colorHex);
+            } catch (Exception e) {
+                colorInt = Color.BLACK; // Màu đen mặc định
+            }
+
+            Map<String, Object> categoryData = new HashMap<>();
+            categoryData.put("itemName", name);
+            categoryData.put("icon", iconName); // Lưu ý: field trong Firestore là "icon"
+            categoryData.put("type", type);
+            categoryData.put("color", colorInt);
+            categoryData.put("viewType", DanhMuc.TYPE_CATEGORY);
+
+            // Tạo document mới với ID tự động
+            db.collection("DanhMuc")
+                    .add(categoryData)
+                    .addOnSuccessListener(documentReference -> {
+                        Log.d(TAG, "Danh mục đã thêm thành công với ID: " + documentReference.getId());
+                        listener.onCategoryAdded();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Lỗi thêm danh mục: " + e.getMessage());
+                        listener.onError(e.getMessage());
+                    });
+        }
+
+        /** Lấy tất cả icons có sẵn */
+        public void getAllIcons(Context context, FirestoreCallback<List<String>> callback) {
+            List<String> icons = new ArrayList<>();
+
+            // Danh sách icons mặc định
+            icons.add("ic_logo");
+            icons.add("ic_food");
+            icons.add("ic_shopping");
+            icons.add("ic_transport");
+            icons.add("ic_entertain");
+            icons.add("ic_health");
+            icons.add("ic_education");
+            icons.add("ic_bill");
+            icons.add("ic_salary");
+            icons.add("ic_gift");
+            icons.add("ic_other");
+
+            // Có thể thêm logic lấy từ Firestore nếu cần
+            callback.onSuccess(icons);
+        }
+
+
+
+
+
     }

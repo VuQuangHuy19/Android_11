@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kích thước spacing -->
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_medium">12dp</dimen>
+    <dimen name="spacing_large">16dp</dimen>
+
+    <!-- Kích thước item -->
+    <dimen name="item_margin">4dp</dimen>
+    <dimen name="item_padding">8dp</dimen>
+</resources>
