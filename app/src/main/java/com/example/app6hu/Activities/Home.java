@@ -10,6 +10,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.app6hu.Fragments.CalendarFragment;
+import com.example.app6hu.Fragments.HocPhiFragment;
 import com.example.app6hu.Fragments.ReportFragment;
 import com.example.app6hu.Fragments.GoalsFragment;
 import com.example.app6hu.Fragments.SchoolFragment;
@@ -55,7 +56,7 @@ public class Home extends AppCompatActivity {
                 selectedFragment = new ReportFragment();
             }
             else if (itemId == R.id.nav_school) {
-                selectedFragment = new SchoolFragment();
+                selectedFragment = new HocPhiFragment();
             }
             else if (itemId == R.id.nav_saving) {
                 selectedFragment = new GoalsFragment();
