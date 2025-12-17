@@ -13,10 +13,12 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.app6hu.Activities.AddHocPhiActivity;
+import com.example.app6hu.Activities.EditHocPhiActivity;
 import com.example.app6hu.R;
 import com.example.app6hu.model.HocPhi;
 import com.example.app6hu.utils.MoneyUtils;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,67 +57,87 @@ public class HocPhiAdapter extends RecyclerView.Adapter<HocPhiAdapter.ViewHolder
 
         if ("DA_DONG".equals(hp.getTrangThai())) {
             h.tvTrangThai.setText("ĐÃ ĐÓNG");
-            h.tvTrangThai.setTextColor(0xFF4CAF50); // Xanh
+            h.tvTrangThai.setTextColor(0xFF4CAF50);
         } else {
             h.tvTrangThai.setText("CHƯA ĐÓNG");
-            h.tvTrangThai.setTextColor(0xFFE53935); // Đỏ
+            h.tvTrangThai.setTextColor(0xFFE53935);
         }
 
 
         h.itemView.setOnClickListener(v -> {
 
-            if ("DA_DONG".equals(hp.getTrangThai())) {
-                Toast.makeText(context,
+            int pos = h.getAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
+
+            HocPhi currentHp = list.get(pos);
+
+            if ("DA_DONG".equals(currentHp.getTrangThai())) {
+                Toast.makeText(h.itemView.getContext(),
                         "Môn này đã đóng rồi!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            new AlertDialog.Builder(context)
+            new AlertDialog.Builder(h.itemView.getContext())
                     .setTitle("Xác nhận đóng học phí")
-                    .setMessage("Bạn có chắc muốn đóng học phí cho:\n" + hp.getTenHocPhi() + "?")
+                    .setMessage("Bạn có chắc muốn đóng học phí cho:\n" + currentHp.getTenHocPhi() + "?")
                     .setPositiveButton("ĐÓNG", (dialog, which) -> {
 
-                        FirebaseDatabase.getInstance()
-                                .getReference("hoc_phi")
-                                .child(hp.getId())
-                                .child("trangThai")
-                                .setValue("DA_DONG");
+                        FirebaseFirestore.getInstance()
+                                .collection("hoc_phi")
+                                .document(currentHp.getId())
+                                .update("trangThai", "DA_DONG")
+                                .addOnSuccessListener(unused -> {
 
-                        Toast.makeText(context,
-                                "✅ Đã đóng học phí!", Toast.LENGTH_SHORT).show();
+                                    // ✅ Cập nhật dữ liệu local
+                                    currentHp.setTrangThai("DA_DONG");
+
+                                    // ✅ Cập nhật UI
+                                    notifyItemChanged(pos);
+
+                                    Toast.makeText(h.itemView.getContext(),
+                                            "✅ Đã đóng học phí!", Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(h.itemView.getContext(),
+                                                "❌ Lỗi: " + e.getMessage(),
+                                                Toast.LENGTH_SHORT).show()
+                                );
                     })
                     .setNegativeButton("HỦY", null)
                     .show();
         });
-
         h.itemView.setOnLongClickListener(v -> {
 
-            String[] options = {"✏ Sửa", "🗑 Xóa"};
+            String[] options = {"Sửa", "Xóa"};
 
             new AlertDialog.Builder(context)
                     .setTitle("Chọn hành động")
                     .setItems(options, (dialog, which) -> {
 
-                        // ✅ SỬA
+
                         if (which == 0) {
-                            Intent intent = new Intent(context, AddHocPhiActivity.class);
-                            intent.putExtra("id", hp.getId());
-                            intent.putExtra("ten", hp.getTenHocPhi());
-                            intent.putExtra("tien", hp.getSoTien());
-                            intent.putExtra("ngay", hp.getNgayDong());
-                            intent.putExtra("trangThai", hp.getTrangThai());
+                            Intent intent = new Intent(context, EditHocPhiActivity.class);
+                            intent.putExtra("DOC_ID", hp.getId()); // documentId Firestore
                             context.startActivity(intent);
+
                         }
 
-                        // ✅ XÓA
-                        if (which == 1) {
-                            FirebaseDatabase.getInstance()
-                                    .getReference("hoc_phi")
-                                    .child(hp.getId())
-                                    .removeValue();
 
-                            Toast.makeText(context,
-                                    "✅ Đã xóa học phí", Toast.LENGTH_SHORT).show();
+                        if (which == 1) {
+                            FirebaseFirestore.getInstance()
+                                    .collection("hoc_phi")
+                                    .document(hp.getId())
+                                    .delete()
+                                    .addOnSuccessListener(unused ->
+                                            Toast.makeText(context,
+                                                    "Đã xóa học phí",
+                                                    Toast.LENGTH_SHORT).show()
+                                    )
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(context,
+                                                    "Xóa thất bại",
+                                                    Toast.LENGTH_SHORT).show()
+                                    );
                         }
                     })
                     .show();
