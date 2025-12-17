@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ic_beer.xml - Bia rượu -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFC107" android:pathData="M20,6h-2V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v2H4c-1.1,0 -2,0.9 -2,2v11c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V8c0,-1.1 -0.9,-2 -2,-2zM10,4h4v2h-4V4zM20,19H4V8h2v2c0,0.55 0.45,1 1,1h1v3c0,1.1 0.9,2 2,2h4c1.1,0 2,-0.9 2,-2v-3h1c0.55,0 1,-0.45 1,-1V8h2V19z"/>
+</vector>

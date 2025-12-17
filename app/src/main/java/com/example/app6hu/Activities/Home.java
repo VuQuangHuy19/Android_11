@@ -13,7 +13,6 @@ import com.example.app6hu.Fragments.CalendarFragment;
 import com.example.app6hu.Fragments.HocPhiFragment;
 import com.example.app6hu.Fragments.ReportFragment;
 import com.example.app6hu.Fragments.GoalsFragment;
-import com.example.app6hu.Fragments.SchoolFragment;
 import com.example.app6hu.Fragments.SettingsFragment;
 import com.example.app6hu.Fragments.TransactionFragment;
 import com.example.app6hu.R;
