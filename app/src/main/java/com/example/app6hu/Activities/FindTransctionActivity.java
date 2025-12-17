@@ -412,5 +412,5 @@ public class FindTransctionActivity extends AppCompatActivity {
                 totalIncome, totalExpense, total));
     }
 
-    // Các phương thức khác giữ nguyên...
+    
 }

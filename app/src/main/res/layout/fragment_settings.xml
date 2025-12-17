@@ -70,7 +70,40 @@
             android:layout_marginTop="24dp"
             android:backgroundTint="@color/primary"
             android:textColor="@color/white"/>
+        <!-- ========== PHẦN QUẢN LÝ DỮ LIỆU ========== -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="16dp"/>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Quản lý dữ liệu"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/red"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Nút Xóa dữ liệu -->
+        <Button
+            android:id="@+id/btn_clear_data"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚠️ XÓA TẤT CẢ DỮ LIỆU"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/red"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Xóa tất cả giao dịch đã lưu. Hành động này không thể hoàn tác!"
+            android:textSize="12sp"
+            android:textColor="@color/gray"
+            android:layout_marginBottom="32dp"/>
     </LinearLayout>
 
 </ScrollView>

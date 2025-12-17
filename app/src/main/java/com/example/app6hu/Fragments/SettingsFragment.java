@@ -18,14 +18,15 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 
 import com.example.app6hu.MainActivity;
 import com.example.app6hu.R;
+import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.model.Transaction;
 import com.example.app6hu.utils.Export;
-
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,7 +37,7 @@ import java.util.Locale;
 public class SettingsFragment extends Fragment {
 
     private Spinner themeSpinner, languageSpinner;
-    private Button btnApply;
+    private Button btnApply, btnClearData;
     private String selectedTheme, selectedLanguage;
 
     public SettingsFragment() {
@@ -54,10 +55,19 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
         Button btnExport = view.findViewById(R.id.btn_export_report);
         themeSpinner = view.findViewById(R.id.theme_spinner);
         languageSpinner = view.findViewById(R.id.language_spinner);
         btnApply = view.findViewById(R.id.btn_apply);
+        btnClearData = view.findViewById(R.id.btn_clear_data); // Thêm nút này trong XML
+
+        // Nếu chưa có nút trong XML, tạo mới
+        if (btnClearData == null) {
+            // Có thể tạo nút động hoặc thêm vào XML
+        } else {
+            btnClearData.setOnClickListener(v -> showClearDataDialog());
+        }
 
         // ------------------------
         // Spinner: Chủ đề (Sáng / Tối)
@@ -99,9 +109,6 @@ public class SettingsFragment extends Fragment {
 
         // Apply settings button
         btnApply.setOnClickListener(v -> applySettings());
-
-
-
     }
 
     private void applySettings() {
@@ -140,12 +147,39 @@ public class SettingsFragment extends Fragment {
         );
     }
 
+    // Thêm trong SettingsActivity hoặc HomeActivity
+    private void showClearDataDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Xóa dữ liệu")
+                .setMessage("Bạn có chắc muốn xóa TẤT CẢ dữ liệu giao dịch?\n\n" +
+                        "Hành động này không thể hoàn tác!")
+                .setPositiveButton("XÓA", (dialog, which) -> {
+                    clearAllData();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
 
+    private void clearAllData() {
+        FirebasestoreManager manager = new FirebasestoreManager();
+        manager.deleteAllTransactions(new FirebasestoreManager.FirestoreCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                Toast.makeText(requireContext(),
+                        "Đã xóa tất cả dữ liệu giao dịch",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(),
+                        "Lỗi khi xóa dữ liệu: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
     interface FirebaseCallback {
         void onResult(List<Transaction> list);
     }
-
-
-
 }

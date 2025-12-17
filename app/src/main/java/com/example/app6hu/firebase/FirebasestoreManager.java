@@ -2,10 +2,12 @@ package com.example.app6hu.firebase;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
+import android.widget.Toast;
 
-    import androidx.annotation.NonNull;
+import androidx.annotation.NonNull;
 
-    import com.example.app6hu.R;
+import com.example.app6hu.MainActivity;
+import com.example.app6hu.R;
     import com.example.app6hu.model.DanhMuc;
     import com.example.app6hu.model.Goal;
     import com.example.app6hu.model.Transaction;
@@ -21,8 +23,9 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
     import com.google.firebase.firestore.QueryDocumentSnapshot;
     import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
-    import java.util.ArrayList;
+import java.util.ArrayList;
     import java.util.Calendar;
     import java.util.Date;
     import java.util.HashMap;
@@ -674,6 +677,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
                     });
         }
 
+
+
+
         /** Lấy tất cả icons có sẵn */
         public void getAllIcons(Context context, FirestoreCallback<List<String>> callback) {
             List<String> icons = new ArrayList<>();
@@ -691,12 +697,105 @@ import com.google.firebase.firestore.FirebaseFirestore;
             icons.add("ic_gift");
             icons.add("ic_other");
 
+            icons.add("ic_allowance");
+            icons.add("ic_arrow_left");
+            icons.add("ic_arrow-right");
+            icons.add("ic_beaty");
+            icons.add("ic_beer");
+            icons.add("ic_bike");
+            icons.add("ic_bonus");
+            icons.add("ic_bus");
+            icons.add("ic_calendar");
+            icons.add("ic_chart");
+            icons.add("ic_check");
+            icons.add("ic_clothes");
+            icons.add("ic_coffee");
+            icons.add("ic_commission");
+            icons.add("ic_cosmetic");
+            icons.add("ic_default");
+            icons.add("ic_delete");
+            icons.add("ic_dividends");
+            icons.add("ic_edit");
+            icons.add("ic_electric");
+            icons.add("ic_email");
+            icons.add("ic_fastfood");
+            icons.add("ic_freelance");
+            icons.add("ic_gas");
+            icons.add("ic_groceries");
+            icons.add("ic_gym");
+            icons.add("ic_home");
+            icons.add("ic_house");
+            icons.add("ic_internet");
+            icons.add("ic_invest");
+            icons.add("ic_launcher_background");
+            icons.add("ic_launcher_foreground");
+            icons.add("ic_lock");
+            icons.add("ic_movie");
+            icons.add("ic_music");
+            icons.add("ic_notifications");
+            icons.add("ic_parking");
+            icons.add("ic_pen");
+            icons.add("ic_person");
+            icons.add("ic_pharmacy");
+            icons.add("ic_plus");
+            icons.add("ic_rent");
+            icons.add("ic_restaurant");
+            icons.add("ic_royalty");
+            icons.add("ic_saving");
+            icons.add("ic_school");
+            icons.add("ic_selling");
+            icons.add("ic_setting");
+            icons.add("ic_sports");
+            icons.add("ic_taxi");
+            icons.add("ic_wallet");
             // Có thể thêm logic lấy từ Firestore nếu cần
             callback.onSuccess(icons);
         }
 
+        // ========== NEW: DELETE ALL TRANSACTIONS ==========
 
+        /**
+         * Xóa TẤT CẢ giao dịch trong collection
+         */
+        public void deleteAllTransactions(FirestoreCallback<Void> callback) {
+            db.collection(Constants.COLLECTION_TRANSACTIONS)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            int totalDocuments = task.getResult().size();
+                            Log.d(TAG, "Found " + totalDocuments + " transactions to delete");
 
+                            if (totalDocuments == 0) {
+                                // Không có gì để xóa
+                                Log.d(TAG, "No transactions to delete");
+                                callback.onSuccess(null);
+                                return;
+                            }
+
+                            // Sử dụng batch delete để xóa nhiều document cùng lúc
+                            WriteBatch batch = db.batch();
+
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                batch.delete(document.getReference());
+                            }
+
+                            // Thực thi batch delete
+                            batch.commit()
+                                    .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "✅ Successfully deleted ALL " + totalDocuments + " transactions");
+                                        callback.onSuccess(null);
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e(TAG, "❌ Error deleting transactions: " + e.getMessage());
+                                        callback.onFailure(e);
+                                    });
+
+                        } else {
+                            Log.e(TAG, "Error getting transactions: ", task.getException());
+                            callback.onFailure(task.getException());
+                        }
+                    });
+        }
 
 
     }

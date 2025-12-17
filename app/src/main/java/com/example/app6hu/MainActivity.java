@@ -76,7 +76,7 @@
                         .get()
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
-                                Log.d("DEBUG", "✅ Collection DanhMuc tồn tại");
+                                Log.d("DEBUG", " Collection DanhMuc tồn tại");
                                 Log.d("DEBUG", "Số lượng documents: " + task.getResult().size());
 
                                 for (DocumentSnapshot doc : task.getResult().getDocuments()) {
@@ -90,7 +90,7 @@
                                     Log.d("DEBUG", "  resourcesID: " + doc.get("resourcesID"));
                                 }
                             } else {
-                                Log.e("DEBUG", "❌ Lỗi truy cập DanhMuc: " + task.getException());
+                                Log.e("DEBUG", " Lỗi truy cập DanhMuc: " + task.getException());
                             }
                         });
 
@@ -104,11 +104,11 @@
                                 Log.d("DEBUG", "Số documents type='expense': " + task.getResult().size());
 
                                 if (task.getResult().isEmpty()) {
-                                    Log.w("DEBUG", "⚠️ KHÔNG có documents nào với type='expense'");
-                                    Log.w("DEBUG", "⚠️ Kiểm tra lại giá trị field 'type' trong Firestore");
+                                    Log.w("DEBUG", "KHÔNG có documents nào với type='expense'");
+                                    Log.w("DEBUG", "Kiểm tra lại giá trị field 'type' trong Firestore");
                                 }
                             } else {
-                                Log.e("DEBUG", "❌ Lỗi query type='expense': " + task.getException());
+                                Log.e("DEBUG", " Lỗi query type='expense': " + task.getException());
                             }
                         });
             }

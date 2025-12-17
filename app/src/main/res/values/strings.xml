@@ -1,5 +1,21 @@
 <resources>
-    <string name="app_name">Money App</string>
+    <string name="app_name" translatable="false">Money App</string>
     <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="hello_blank_fragment" translatable="false">Hello blank fragment</string>
+    <string-array name="theme_options">
+        <item>Chế độ sáng</item>
+        <item>Chế độ tối</item>
+    </string-array>
+
+    <!-- Language options -->
+    <string-array name="language_options">
+        <item>Tiếng Việt</item>
+        <item>English</item>
+    </string-array>
+
+    <!-- Messages -->
+    <string name="clear_data_title">Xóa dữ liệu</string>
+    <string name="clear_data_message">Bạn có chắc muốn xóa TẤT CẢ dữ liệu giao dịch?\n\nHành động này không thể hoàn tác!</string>
+    <string name="clear_data_success">Đã xóa tất cả dữ liệu giao dịch</string>
+    <string name="clear_data_error">Lỗi khi xóa dữ liệu: %s</string>
 </resources>
