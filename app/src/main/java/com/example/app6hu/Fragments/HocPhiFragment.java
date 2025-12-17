@@ -24,6 +24,7 @@ import com.example.app6hu.Adapter.HocPhiAdapter;
 import com.example.app6hu.R;
 import com.example.app6hu.firebase.FirestoreHocPhiManager;
 import com.example.app6hu.model.HocPhi;
+import com.example.app6hu.utils.MoneyUtils;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -105,8 +106,10 @@ public class HocPhiFragment extends Fragment {
             list.clear();
             list.addAll(data);
 
+
             adapter.notifyDataSetChanged();
-            tvTongTien.setText("Tổng tiền cần đóng: " + tongTien + " đ");
+            String tienFormat= MoneyUtils.format(tongTien);
+            tvTongTien.setText("Tổng tiền cần đóng: " + tienFormat + " đ");
         });
     }
 

@@ -23,6 +23,9 @@
         <activity android:name=".Activities.AddHocPhiActivity"
             android:exported="false" />
         <activity
+            android:name=".Activities.EditHocPhiActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activities.ChonTruongActivity"
             android:exported="false" />
         <activity

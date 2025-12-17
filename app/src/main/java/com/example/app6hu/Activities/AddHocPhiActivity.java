@@ -1,5 +1,6 @@
 package com.example.app6hu.Activities;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.*;
@@ -9,7 +10,10 @@ import com.example.app6hu.R;
 import com.example.app6hu.firebase.FirebasestoreManager;
 import com.example.app6hu.firebase.FirestoreHocPhiManager;
 import com.example.app6hu.model.HocPhi;
+import com.example.app6hu.utils.MoneyUtils;
 
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.UUID;
 
 public class AddHocPhiActivity extends AppCompatActivity {
@@ -40,6 +44,22 @@ public class AddHocPhiActivity extends AppCompatActivity {
                 edtHeSo.setText("");
             }
         });
+        edtNgayDong.setFocusable(false);
+        edtNgayDong.setClickable(true);
+
+        edtNgayDong.setOnClickListener(v -> showDatePicker());
+
+        edtDonGiaTin.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) { // khi rời ô nhập
+                String text = edtDonGiaTin.getText().toString();
+
+                if (!text.isEmpty()) {
+                    long value = Long.parseLong(text);
+                    edtDonGiaTin.setText(MoneyUtils.format(value));
+                }
+            }
+        });
+
         btnLuu = findViewById(R.id.btnLuuHocPhi);
 
         btnLuu.setOnClickListener(v -> saveHocPhi());
@@ -57,7 +77,7 @@ public class AddHocPhiActivity extends AppCompatActivity {
             return;
         }
 
-        long donGia = Long.parseLong(donGiaStr);
+        long donGia = Long.parseLong(donGiaStr.replace(".", "").replace(" đ", ""));
         int soTin = Integer.parseInt(soTinStr);
         double heSo;
 
@@ -94,11 +114,32 @@ public class AddHocPhiActivity extends AppCompatActivity {
                 .document(id)  // id tự tạo của bạn
                 .set(hocPhi)
                 .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "✅ Đã thêm học phí: " + soTien + " đ", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "✅ Đã thêm học phí: " + soTien + "", Toast.LENGTH_LONG).show();
                     finish();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "❌ Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
+    private void showDatePicker() {
+        Calendar calendar = Calendar.getInstance();
+
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                (view, y, m, d) -> {
+                    // format dd/MM/yyyy
+                    String date = String.format(Locale.getDefault(),
+                            "%02d/%02d/%04d", d, m + 1, y);
+                    edtNgayDong.setText(date);
+                },
+                year, month, day
+        );
+
+        datePickerDialog.show();
+    }
+
 }
